@@ -4,11 +4,13 @@
 
 This works similar to [this project](https://github.com/quantdrent/ESP32-Prescript-Beeper) with many qol.
 
-this runs on web ble instead of wifi html, i recommend to use a SuperMini nRF52840 as the MCU but any esp32 boards should work too, i picked this up since i had it lying around and it has a built in charger and better battery performance than a esp32. If you want to use any other boards you need to tweak the gpio in config.h.
+this runs on web ble instead of wifi html, i recommend to use a nRF52840 SuperMini / nice!nano since it has better battery life but i have added a esp32 firmware you can config it to the esp32 version you use, i recommend a esp32 s3 super mini since it has a built in charger or a c3 if you dont need battery
 
-if you are unable to obtain a 2.25 inch tft screen you need to change the library and the object name, you also need to tweak the case in tinkercad just ungroup the white object and change the screen hole size and dont forget to group it again before exporting or ask help to @quantdrent on tiktok or discord
+if you are unable to obtain a 2.25 inch tft screen you need to change the library and the object name, you also need to tweak the case in tinkercad or ask help to @quantdrent on tiktok and discord
 
 **You need to use a browser that supports web ble**
+
+https://quantdrent.github.io/Rien-Prescript-Beeper
 
 ## Required Materials
 * SuperMini nRF52840 [[AliExpress](https://www.aliexpress.com/item/1005006019812115.html)] (a supermini esp32 should work too)
@@ -21,21 +23,24 @@ if you are unable to obtain a 2.25 inch tft screen you need to change the librar
 ## Required Libraries
 
 - `Adafruit ST7735 and ST7789 Library` (with their dependency)
-- `Preinstalled board libraries`
 
 ## Instructions
 > Look up "how to setup (boardname) Arduino IDE" before proceeding, for nrf check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones
-1. Open .ino file on arduino ide
-2. Open config.h and tweak the gpio if you are not using the nrf52
-3. Upload the sketch
-4. wire and assemble everything
-5. Open the page linked below the description (make sure your browser supports web bluetooth)
-6. Click Connect Beeper
-7. Larp
+> For nr52840 dont forget to solder boost (two pads) if ur batt is more than 500
+1. Solder Everything based on your wiring or you can follow the schematics in images folder if you are using a nrf52840 
+2. Open .ino file on arduino ide
+3. Open config.h and tweak the gpio if you are not using the nrf52840
+4. Upload the sketch
+5. Open [this page](https://quantdrent.github.io/Rien-Prescript-Beeper/)
+6. Click pair and find your device
+7. click prescrits on the top middle and you can add or remove your saved prescripts
+8. click the button on the middle of the screen to send a random prescripts
+9. you can also get a random prescripts by pressing the buttons on your physical device
+10. you can factory reset by pressing the red button on bottom right
 
 ## Images
 wip.
 
 The web ble page was forked from Kritzkingvoid Prescript web project
 
-https://kritzkingvoid.github.io/Prescripts/
+https://kritzkingvoid.github.io/Prescripts/ 
