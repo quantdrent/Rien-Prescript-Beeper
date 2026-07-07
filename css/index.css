@@ -1,0 +1,311 @@
+@font-face {
+  font-family: "code";
+  src: url("../media/fonts/PixelifySans-Regular.woff2") format("woff2"),
+       url("../media/fonts/PixelifySans-Regular.woff") format("woff");
+}
+   
+body {
+    margin: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: #0f0f0f;
+    color: #99caff; 
+    font-family: "code", monospace;
+    overflow: hidden;
+} 
+#imageHolder {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+#buttonContainer {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    height: 60px; /* Prevents layout shifting when buttons appear/disappear */
+}
+    
+#buttonContainer button {
+    background: none;
+    border: none;
+    color: #99edff;
+    font-family: "code", monospace;
+    font-size: 35px;
+    cursor: pointer;
+    text-shadow:
+    0 0 10px rgba(153, 237, 255, 0.8),
+    0 0 20px rgba(153, 237, 255, 0.5),
+    0 0 40px rgba(0, 183, 235, 0.3);
+}
+    
+#buttonContainer button:hover {
+    opacity: 0.7;
+}
+
+#forkLink {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    color: #99caff;
+    text-decoration: none;
+    font-size: 16px;
+    opacity: 0.7;
+}
+
+#forkLink:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+#factoryResetBtn {
+    position: absolute;
+    bottom: 45px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    font-family: "code", monospace;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.7;
+    padding: 0;
+}
+#factoryResetBtn:hover:not([disabled]) {
+    opacity: 1;
+    text-decoration: underline;
+}
+#factoryResetBtn[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+#guideLink {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    color: #99caff;
+    text-decoration: none;
+    font-size: 16px;
+    opacity: 0.7;
+}
+#guideLink:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+}
+.modal-content {
+    background-color: #0f0f0f;
+    border: 1px solid #99edff;
+    margin: 10% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    color: #99edff;
+    box-shadow: 0 0 20px rgba(153, 237, 255, 0.5);
+    font-family: "code", monospace;
+}
+#closeCustoms {
+    color: #99caff;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+#closeCustoms:hover {
+    color: #fff;
+}
+.custom-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #333;
+}
+.custom-item span {
+    flex-grow: 1;
+}
+
+#timerDisplay {
+    font-size: 35px;
+    font-family: 'code', monospace;
+    color: #99edff;
+    margin: 0 20px;
+    text-shadow: 0 0 10px rgba(153, 237, 255, 0.8);
+}
+
+@media (max-width: 600px) {
+    #buttonContainer button {
+        font-size: 24px;
+    }
+    #buttonContainer {
+        gap: 10px;
+    }
+    #timerDisplay {
+        font-size: 24px;
+        margin: 0 10px;
+    }
+    #forkLink, #guideLink, #factoryResetBtn {
+        font-size: 10px;
+    }
+    #guideLink {
+        bottom: 10px;
+        left: 10px;
+    }
+    #forkLink {
+        bottom: 10px;
+        right: 10px;
+    }
+    #factoryResetBtn {
+        bottom: 30px;
+        right: 10px;
+    }
+}
+
+.custom-item button {
+    background: none;
+    border: 1px solid #99edff;
+    color: #99edff;
+    cursor: pointer;
+    font-family: "code", monospace;
+    padding: 5px 10px;
+    margin-left: 10px;
+}
+.custom-item button:hover {
+    background: #99edff;
+    color: #000;
+}
+#newCustomInput {
+    width: 60%;
+    padding: 5px;
+    font-family: "code", monospace;
+    background: #000;
+    color: #99edff;
+    border: 1px solid #99edff;
+}
+#addCustomBtn {
+    background: none;
+    border: 1px solid #99edff;
+    color: #99edff;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: "code", monospace;
+}
+#addCustomBtn:hover {
+    background: #99edff;
+    color: #000;
+}
+
+#customsList {
+    max-height: 50vh;
+    overflow-y: auto;
+    margin-top: 15px;
+    padding-right: 5px;
+}
+
+#customsList::-webkit-scrollbar {
+    width: 6px;
+}
+#customsList::-webkit-scrollbar-track {
+    background: transparent;
+}
+#customsList::-webkit-scrollbar-thumb {
+    background: #99edff;
+    border-radius: 3px;
+}
+
+#newCustomDuration {
+    width: 60px;
+    padding: 5px;
+    font-family: "code", monospace;
+    background: #000;
+    color: #99edff;
+    border: 1px solid #99edff;
+}
+
+.sync-modal-desc {
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.sync-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sync-btn {
+    background: none;
+    padding: 15px;
+    font-family: "code", monospace;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.sync-btn--override {
+    border: 1px solid #ff6b6b;
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.sync-btn--merge {
+    border: 1px solid #99edff;
+    color: #99edff;
+    text-shadow: 0 0 10px rgba(153, 237, 255, 0.5);
+}
+
+.sync-btn span {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+#closeSync {
+    float: right;
+    cursor: pointer;
+    color: #99caff;
+    font-size: 28px;
+    font-weight: bold;
+}
+#closeSync:hover {
+    color: #fff;
+}
+
+.custom-item-text {
+    flex-grow: 1;
+    margin-right: 10px;
+    padding: 5px;
+    background: transparent;
+    color: #99caff;
+    border: 1px solid transparent;
+    font-family: "code", monospace;
+}
+.custom-item-text:focus {
+    border: 1px solid #99edff;
+    outline: none;
+}
+
+.custom-item-duration {
+    width: 40px;
+    padding: 5px;
+    background: transparent;
+    color: #99caff;
+    border: 1px solid transparent;
+    font-family: "code", monospace;
+}
+.custom-item-duration:focus {
+    border: 1px solid #99edff;
+    outline: none;
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="css/navbars.css">
+<link rel="stylesheet" href="css/index.css">
+<link rel="stylesheet" href="css/text.css">
+<link rel="icon" type="image/x-icon" href="img/device.png">
+<script src="javarice/interface.js" defer></script>
+<script src="javarice/prescripts.js" defer></script>
+<script src="javarice/scrambler.js" defer></script>
+<script src="javarice/states.js" defer ></script>
+<script src="javarice/will.js" defer></script>
+<script src="javarice/ble.js" defer></script>
+<script src="javarice/customs.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Will of the City</title>
+</head>
+
+<body>
+    <div id="topNavbar">
+        <button id="bleConnectBtn">_Pair Device_</button>
+        <button id="customsBtn">_Prescripts_</button>
+        <span id="deviceStatus" style="color: #ff6b6b; font-family: 'code', monospace;">_Disconnected_</span>
+    </div>
+
+
+    <div id="mainContent" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 60px; width: 100%;">
+        <div id="scrambleText"></div>
+        <div id="buttonContainer">
+            <button id="startBtn">PRESCRIPT</button>
+        </div>
+    </div>
+    <div id="navbar">
+        <div class="navItem">
+            <img src="img/grace.png" alt="">
+            <span id="achievedCount">PASS: 0</span>
+        </div>
+        <div class="navItem">
+            <img src="img/karma.png" alt="">
+            <span id="failedCount">FAILED: 0</span>
+        </div>
+        <div class="navItem">
+            <img src="img/device.png" alt="">
+            <span id="totalCount">PRESCRIPTS: 0</span>
+        </div>
+    </div>
+    <div id="customsModal" class="modal">
+        <div class="modal-content">
+            <span id="closeCustoms">&times;</span>
+            <h2>Prescript Storage</h2>
+            <div id="customsList">No custom prescripts loaded. Connect device first.</div>
+            <div style="margin-top: 20px;">
+                <input type="text" id="newCustomInput" placeholder="Enter new prescript">
+                <input type="number" id="newCustomDuration" placeholder="Secs" value="10" min="1">
+                <button id="addCustomBtn">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="syncModal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <span id="closeSync">&times;</span>
+            <h2>Sync Prescripts</h2>
+            <p class="sync-modal-desc">You have offline prescripts saved. How would you like to sync them with the device?</p>
+            <div class="sync-modal-actions">
+                <button id="btnDeviceOverride" class="sync-btn sync-btn--override">DEVICE OVERRIDE<br><span>Wipe offline edits and load device data.</span></button>
+                <button id="btnSmartMerge" class="sync-btn sync-btn--merge">MERGE<br><span>Combine offline edits with device data.</span></button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="scrambleAudio" src="media/scramble.mp3" preload="auto"></audio>
+    <a id="guideLink" href="https://github.com/quantdrent/Rien-Prescript-Beeper" target="_blank" rel="noopener noreferrer">_Beeper Device Guide_</a>
+    <button id="factoryResetBtn" disabled>_RESET DEVICE_</button>
+    <a id="forkLink" href="https://kritzkingvoid.github.io/Prescripts/" target="_blank" rel="noopener noreferrer">_Forked from Kritzkingvoid_</a>
+</body>
+</html>
