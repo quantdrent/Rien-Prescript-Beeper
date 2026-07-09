@@ -9,6 +9,7 @@ this runs on web ble instead of wifi html, i recommend to use a nRF52840 SuperMi
 if you are unable to obtain a 2.25 inch tft screen you need to change the library and the object name, you also need to tweak the case in tinkercad or ask help to @quantdrent on tiktok and discord
 
 **You need to use a browser that supports web ble**
+(Chrome, Edge , Opera, etc)
 
 https://quantdrent.github.io/Rien-Prescript-Beeper
 
@@ -16,7 +17,7 @@ https://quantdrent.github.io/Rien-Prescript-Beeper
 * SuperMini nRF52840 [[AliExpress](https://www.aliexpress.com/item/1005006019812115.html)] (a supermini esp32 should work too)
 * 2.25 Inch TFT LCD Module 76x284, ST7789 [[AliExpress](https://www.aliexpress.com/item/1005011855033572.html)]
 * 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
-* AWG 26 wires
+* Wires (use ur prefered wire type, i used awg 24)
 
 >  Dont forget you need to solder too!
 
