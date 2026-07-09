@@ -11,8 +11,13 @@ let txCharacteristic = null;
 let incomingBuffer = "";
 
 async function connectToBeeper() {
-    if (bleDevice && bleDevice.gatt.connected) {
-        bleDevice.gatt.disconnect();
+    if (bleDevice && rxCharacteristic) {
+        try {
+            bleDevice.gatt.disconnect();
+        } catch (e) {
+            console.warn("Disconnect error:", e);
+            onDisconnected();
+        }
         return;
     }
     const statusEl = document.getElementById("deviceStatus");
@@ -46,9 +51,11 @@ async function connectToBeeper() {
         document.getElementById('bleConnectBtn').classList.add("connected");
         document.getElementById('bleConnectBtn').textContent = "_Disconnect_";
         document.getElementById('factoryResetBtn').removeAttribute('disabled');
+        document.getElementById('settingsBtn').removeAttribute('disabled');
         if (statusEl) statusEl.textContent = "_Loading data..._";
         await sendBleCommand("GET_CUSTOMS");
         await sendBleCommand("GET_STATS");
+        await sendBleCommand("GET_SETTINGS");
         
         if (statusEl) {
             statusEl.textContent = "_Connected_";
@@ -62,17 +69,17 @@ async function connectToBeeper() {
             statusEl.textContent = "_Disconnected_";
             statusEl.style.color = "#ff6b6b";
         }
-        alert("Failed to connect to Beeper. Check the battery.");
+        alert("Failed to connect to Beeper. Try again.");
         return false;
     }
 }
 
 function onDisconnected() {
     console.log("Device disconnected.");
-    document.getElementById('bleConnectBtn').textContent = "_Pair Device_";
     document.getElementById('bleConnectBtn').classList.remove("connected");
+    document.getElementById('bleConnectBtn').textContent = "_Pair Device_";
     document.getElementById('factoryResetBtn').setAttribute('disabled', 'true');
-    
+    document.getElementById('settingsBtn').setAttribute('disabled', 'true');
     const statusEl = document.getElementById("deviceStatus");
     if (statusEl) {
         statusEl.textContent = "_Disconnected_";
@@ -142,6 +149,15 @@ function parseBleMessage(message) {
         } catch (e) {
             console.error("Failed to parse stats", e);
         }
+    } else if (message.startsWith("RES:SETTINGS|")) {
+        try {
+            let sleepVal = message.split("|MSG:")[1];
+            if (typeof updateSettingsUI === 'function') {
+                updateSettingsUI(sleepVal);
+            }
+        } catch (e) {
+            console.error("Failed to parse settings", e);
+        }
     }
 }
 
@@ -201,12 +217,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             if (typeof txCharacteristic === 'undefined' || !txCharacteristic) return;
-            if (confirm("Are you sure you want to completely factory reset the device? This will delete all custom Prescripts and stats.")) {
+            if (confirm("Are you sure you want to completely factory reset the device? This will restore default Prescripts and reset stats.")) {
                 sendBleCommand("FACTORY_RESET");
 
                 setTimeout(() => {
-                    sendBleCommand("GET_CUSTOMS");
-                    sendBleCommand("GET_STATS");
+                    if (typeof defaultPrescriptsList !== 'undefined') {
+                        if (typeof updateCustomPrescriptsList === 'function') {
+                            updateCustomPrescriptsList([...defaultPrescriptsList]);
+                        }
+                        if (typeof syncCustomsToDevice === 'function') {
+                            syncCustomsToDevice().then(() => {
+                                sendBleCommand("GET_CUSTOMS");
+                                sendBleCommand("GET_STATS");
+                                sendBleCommand("GET_SETTINGS");
+                            });
+                        }
+                    } else {
+                        sendBleCommand("GET_CUSTOMS");
+                        sendBleCommand("GET_STATS");
+                        sendBleCommand("GET_SETTINGS");
+                    }
                 }, 1500);
             }
         });

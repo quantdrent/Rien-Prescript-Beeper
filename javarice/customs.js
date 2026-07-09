@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("customsBtn");
     const span = document.getElementById("closeCustoms");
     const addBtn = document.getElementById("addCustomBtn");
+    const sendBtn = document.getElementById("sendCustomBtn");
     const input = document.getElementById("newCustomInput");
     const durInput = document.getElementById("newCustomDuration");
 
@@ -124,6 +125,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (typeof sendBleCommand === 'function') {
                     sendBleCommand("ADD_CUSTOM", prescriptToString({ duration, text }));
+                }
+            }
+        });
+    }
+
+    if (sendBtn) {
+        sendBtn.addEventListener("click", () => {
+            const text = input.value.trim();
+            const duration = parseInt(durInput.value.trim(), 10) || 10;
+
+            if (text) {
+                input.value = "";
+                if (typeof triggerManualPrescript === 'function') {
+                    triggerManualPrescript(text, duration);
+                    document.getElementById("customsModal").style.display = "none";
                 }
             }
         });

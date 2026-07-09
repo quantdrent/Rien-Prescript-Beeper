@@ -12,12 +12,14 @@
 <script src="javarice/will.js" defer></script>
 <script src="javarice/ble.js" defer></script>
 <script src="javarice/customs.js" defer></script>
+<script src="javarice/settings.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Will of the City</title>
 </head>
 
 <body>
+    <button id="settingsBtn" disabled>_Settings_</button>
     <div id="topNavbar">
         <button id="bleConnectBtn">_Pair Device_</button>
         <button id="customsBtn">_Prescripts_</button>
@@ -54,6 +56,7 @@
                 <input type="text" id="newCustomInput" placeholder="Enter new prescript">
                 <input type="number" id="newCustomDuration" placeholder="Secs" value="10" min="1">
                 <button id="addCustomBtn">Add</button>
+                <button id="sendCustomBtn">Send</button>
             </div>
         </div>
     </div>
@@ -66,6 +69,54 @@
             <div class="sync-modal-actions">
                 <button id="btnDeviceOverride" class="sync-btn sync-btn--override">DEVICE OVERRIDE<br><span>Wipe offline edits and load device data.</span></button>
                 <button id="btnSmartMerge" class="sync-btn sync-btn--merge">MERGE<br><span>Combine offline edits with device data.</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span id="closeSettings">&times;</span>
+            <h2>Device Settings</h2>
+            <div style="margin-top: 20px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Global Text Scale:
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="textScaleInput" value="2" min="1" max="10">
+                        <img src="img/refresh.svg" id="resetTextScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Base font size multiplier for the device screen.</p>
+                
+                <hr style="border: 1px solid #333; margin: 15px 0;">
+                
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Scramble Frames:
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="scrambleFramesInput" value="30" min="1" max="500">
+                        <img src="img/refresh.svg" id="resetScrambleFrames" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">How long the full scramble chaos lasts (higher = longer).</p>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Scramble Speed (ms):
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="scrambleDelayInput" value="5" min="1" max="100">
+                        <img src="img/refresh.svg" id="resetScrambleDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Delay per frame during chaos (lower = faster).</p>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Reveal Speed (ms):
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="revealDelayInput" value="15" min="1" max="100">
+                        <img src="img/refresh.svg" id="resetRevealDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Delay per letter when revealing (lower = faster).</p>
+
+                <button id="saveSettingsBtn" style="width: 100%; margin-top: 10px;">Save Settings</button>
             </div>
         </div>
     </div>

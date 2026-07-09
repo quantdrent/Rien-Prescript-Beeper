@@ -25,7 +25,7 @@ body {
     gap: 20px;
     align-items: center;
     justify-content: center;
-    height: 60px; /* Prevents layout shifting when buttons appear/disappear */
+    height: 60px; 
 }
     
 #buttonContainer button {
@@ -117,14 +117,14 @@ body {
     box-shadow: 0 0 20px rgba(153, 237, 255, 0.5);
     font-family: "code", monospace;
 }
-#closeCustoms {
+#closeCustoms, #closeSettings {
     color: #99caff;
     float: right;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
 }
-#closeCustoms:hover {
+#closeCustoms:hover, #closeSettings:hover {
     color: #fff;
 }
 .custom-item {
@@ -196,7 +196,7 @@ body {
     color: #99edff;
     border: 1px solid #99edff;
 }
-#addCustomBtn {
+#addCustomBtn, #saveSettingsBtn, #sendCustomBtn {
     background: none;
     border: 1px solid #99edff;
     color: #99edff;
@@ -204,7 +204,7 @@ body {
     cursor: pointer;
     font-family: "code", monospace;
 }
-#addCustomBtn:hover {
+#addCustomBtn:hover, #saveSettingsBtn:hover, #sendCustomBtn:hover {
     background: #99edff;
     color: #000;
 }
@@ -227,13 +227,36 @@ body {
     border-radius: 3px;
 }
 
-#newCustomDuration {
+#newCustomDuration, #autoSleepInput {
     width: 60px;
     padding: 5px;
     font-family: "code", monospace;
     background: #000;
     color: #99edff;
     border: 1px solid #99edff;
+}
+
+#settingsBtn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    color: #99caff;
+    font-family: "code", monospace;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.7;
+    padding: 0;
+    z-index: 100;
+}
+#settingsBtn:hover:not([disabled]) {
+    opacity: 1;
+    text-decoration: underline;
+}
+#settingsBtn[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 .sync-modal-desc {
