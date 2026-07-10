@@ -19,16 +19,17 @@ https://quantdrent.github.io/Rien-Prescript-Beeper
 * AWG 26 wires
 
 >  Dont forget you need to solder too!
+You also need access to a 3d printer to print the case check models folder.
 
 ## Required Libraries
 
 - `Adafruit ST7735 and ST7789 Library` (with their dependency)
 
 ## Instructions
-> Look up "how to setup (boardname) Arduino IDE" before proceeding, for nrf check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones
+> Look up "how to setup (boardname) Arduino IDE" before proceeding, for nrf52840 check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones
 > For nr52840 dont forget to solder boost (two pads) if ur batt is more than 500
 1. Solder Everything based on your wiring or you can follow the schematics in images folder if you are using a nrf52840 
-2. Open .ino file on arduino ide
+2. Open the firmware folder, open the nrf52840 and open the .ino
 3. Open config.h and tweak the gpio if you are not using the nrf52840
 4. Upload the sketch
 5. Open [this page](https://quantdrent.github.io/Rien-Prescript-Beeper/)
