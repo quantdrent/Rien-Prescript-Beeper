@@ -22,10 +22,6 @@ https://quantdrent.github.io/Rien-Prescript-Beeper
 >  Dont forget you need to solder too!
 You also need access to a 3d printer to print the case check models folder.
 
-## Required Libraries
-
-- `Adafruit ST7735 and ST7789 Library` (with their dependency)
-
 ## Instructions
 > Look up "how to setup (boardname) Arduino IDE" before proceeding, for nrf52840 check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones
 > For nr52840 dont forget to solder boost (two pads) if ur batt is more than 500
