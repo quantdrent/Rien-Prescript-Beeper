@@ -92,9 +92,9 @@ static char workLines[6][32];
 static int g_lineX[6];
 static int g_lineCount, g_startY, g_charW, g_charH, g_sz;
 
-static char timerFinalStr[16];
-static char timerWorkStr[16];
-static char timerScreenStr[16];
+static char timerFinalStr[32];
+static char timerWorkStr[32];
+static char timerScreenStr[32];
 static int g_timerX = 0, g_timerY = 0;
 static int g_timerSz = 1;
 static int g_timerCharW = 0, g_timerCharH = 0;
@@ -141,8 +141,23 @@ void drawTimerDiff() {
 void updateTimerDisplay(unsigned long remainingMs) {
   if (timerPosition == 0 || isInfinite || timerFinalStr[0] == '\0') return;
   
-  char newTimerStr[16];
-  snprintf(newTimerStr, sizeof(newTimerStr), "%lus", (remainingMs + 999) / 1000);
+  char newTimerStr[32];
+  unsigned long t = (remainingMs + 999) / 1000;
+  if (t < 60) {
+    snprintf(newTimerStr, sizeof(newTimerStr), "%lus", t);
+  } else {
+    unsigned long h = t / 3600;
+    unsigned long m = (t % 3600) / 60;
+    unsigned long s = t % 60;
+    if (h > 0) {
+      if (s > 0) snprintf(newTimerStr, sizeof(newTimerStr), "%luh %lum %lus", h, m, s);
+      else if (m > 0) snprintf(newTimerStr, sizeof(newTimerStr), "%luh %lum", h, m);
+      else snprintf(newTimerStr, sizeof(newTimerStr), "%luh", h);
+    } else {
+      if (s > 0) snprintf(newTimerStr, sizeof(newTimerStr), "%lum %lus", m, s);
+      else snprintf(newTimerStr, sizeof(newTimerStr), "%lum", m);
+    }
+  }
   
   if (strcmp(timerFinalStr, newTimerStr) != 0) {
     strcpy(timerFinalStr, newTimerStr);
@@ -165,7 +180,22 @@ void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
     return;
   }
   
-  snprintf(timerFinalStr, sizeof(timerFinalStr), "%lus", durationMs / 1000);
+  unsigned long t = durationMs / 1000;
+  if (t < 60) {
+    snprintf(timerFinalStr, sizeof(timerFinalStr), "%lus", t);
+  } else {
+    unsigned long h = t / 3600;
+    unsigned long m = (t % 3600) / 60;
+    unsigned long s = t % 60;
+    if (h > 0) {
+      if (s > 0) snprintf(timerFinalStr, sizeof(timerFinalStr), "%luh %lum %lus", h, m, s);
+      else if (m > 0) snprintf(timerFinalStr, sizeof(timerFinalStr), "%luh %lum", h, m);
+      else snprintf(timerFinalStr, sizeof(timerFinalStr), "%luh", h);
+    } else {
+      if (s > 0) snprintf(timerFinalStr, sizeof(timerFinalStr), "%lum %lus", m, s);
+      else snprintf(timerFinalStr, sizeof(timerFinalStr), "%lum", m);
+    }
+  }
   
   g_timerSz = (int)(textScale * timerScale);
   if (g_timerSz < 1) g_timerSz = 1;

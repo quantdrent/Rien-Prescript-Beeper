@@ -55,6 +55,18 @@ async function triggerFail(fromDevice = false) {
     }
 }
 
+function formatTime(totalSeconds) {
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    let parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 || (h > 0 && s > 0)) parts.push(`${m}m`); // keep '0m' if hours exist and seconds exist? Or just omit if 0? "4h 20s" is fine. User asked "if has hours tthen 4h 3m 20s". Let's just omit 0 values.
+    if (s > 0) parts.push(`${s}s`);
+    return parts.join(" ");
+}
+
 function showResultButtons(duration, respond = true) {
     canResolve = false; 
 
@@ -63,14 +75,14 @@ function showResultButtons(duration, respond = true) {
     if (respond) {
         buttonContainer.innerHTML = `
             <button id="achievedBtn" disabled>Pass</button>
-            <div id="timerDisplay">${timeLeft}s</div>
+            <div id="timerDisplay">${formatTime(timeLeft)}</div>
             <button id="failedBtn" disabled>Failed</button>
         `;
         document.getElementById("achievedBtn").onclick = triggerPass;
         document.getElementById("failedBtn").onclick = triggerFail;
     } else {
         buttonContainer.innerHTML = `
-            <div id="timerDisplay" style="font-size: 1.5em; padding: 10px;">${timeLeft}s</div>
+            <div id="timerDisplay" style="font-size: 1.5em; padding: 10px;">${formatTime(timeLeft)}</div>
         `;
     }
 
@@ -82,7 +94,7 @@ function showResultButtons(duration, respond = true) {
         if (timeLeft > 0) {
             timeLeft--;
             const timerEl = document.getElementById("timerDisplay");
-            if (timerEl) timerEl.textContent = `${timeLeft}s`;
+            if (timerEl) timerEl.textContent = formatTime(timeLeft);
         } else {
             clearInterval(currentTimer);
             if (respond) {
