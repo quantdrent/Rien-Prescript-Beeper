@@ -11,6 +11,7 @@
 
 #define BUTTON_PASS_PIN  D2
 #define BUTTON_FAIL_PIN  D3
+#define BUTTON_POWER_PIN D4
 
 #define DEBOUNCE_DELAY  50
 
