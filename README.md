@@ -3,9 +3,9 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green)
 
 This works similar to [this project](https://github.com/quantdrent/ESP32-Prescript-Beeper) with many qol.
+> If you want to use a esp32 then follow that guide instead (you will be able to use the same website for sending stuff but smaller device)
 
-this runs on web ble instead of wifi html, i recommend to use a nRF52840 SuperMini / nice!nano since it has better battery life but i have added a esp32 firmware you can config it to the esp32 version you use, i recommend a esp32 s3 super mini since it has a built in charger or a c3 if you dont need battery
-
+this runs on web ble instead of the old wifi html version, i used a nrf52840 because i had these lying around and maybe someday ill remake this to support a esp32 c3/s3
 if you are unable to obtain a 2.25 inch tft screen you need to change the library and the object name, you also need to tweak the case in tinkercad or ask help to @quantdrent on tiktok and discord
 
 **You need to use a browser that supports web ble**
