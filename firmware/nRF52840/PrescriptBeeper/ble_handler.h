@@ -58,17 +58,33 @@ void parseCommand(String message) {
     simulateFail = true;
   }
   else if (message == "CMD:NEXT") {
-    if (!isDisplaying) {
-      String line = getRandomPrescript();
+    simulatePass = false;
+    simulateFail = false;
+    
+    int idx = -1;
+    String line = getRandomPrescript(&idx);
+    if (line.length() > 0) {
+      int dur = 10;
+      String text = "";
+      if (parsePrescriptLine(line, dur, text)) {
+        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
+        if (bleuart.notifyEnabled() && idx >= 0) {
+          String evt = "EVT:PRESCRIPT|IDX:" + String(idx) + "\n";
+          sendChunked(evt.c_str(), evt.length());
+        }
+      }
+    }
+  }
+  else if (message.startsWith("CMD:SHOW_IDX:")) {
+    int colon = message.indexOf(':');
+    if (colon != -1) {
+      int idx = message.substring(colon + 1).toInt();
+      String line = getPrescriptByIndex(idx);
       if (line.length() > 0) {
         int dur = 10;
         String text = "";
         if (parsePrescriptLine(line, dur, text)) {
           showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
-          if (bleuart.notifyEnabled()) {
-            String evt = "EVT:PRESCRIPT|DUR:" + String(dur) + "|MSG:" + text + "\n";
-            sendChunked(evt.c_str(), evt.length());
-          }
         }
       }
     }
@@ -141,12 +157,19 @@ void parseCommand(String message) {
   }
 }
 
+String bleBuffer = "";
+
 void handleBLE() {
-  if (bleuart.available()) {
-    String message = bleuart.readStringUntil('\n');
-    message.trim();
-    if (message.length() > 0) {
-      parseCommand(message);
+  while (bleuart.available()) {
+    char c = bleuart.read();
+    if (c == '\n') {
+      bleBuffer.trim();
+      if (bleBuffer.length() > 0) {
+        parseCommand(bleBuffer);
+      }
+      bleBuffer = "";
+    } else {
+      bleBuffer += c;
     }
   }
 }

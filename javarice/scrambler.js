@@ -7,14 +7,13 @@ function scrambleReveal(text, scrambleTime, revealTime, onUpdate, onComplete) {
     const start = performance.now();
     let lastTick = 0;
 
-    scrambleAudio.pause();
-    scrambleAudio.currentTime = 0;
-    scrambleAudio.play().catch(() => {});
+    if (typeof scrambleAudio !== 'undefined' && scrambleAudio) {
+        scrambleAudio.currentTime = 0;
+        scrambleAudio.play().catch(() => {});
+    }
 
     function loop(now) {
         if (runId !== activeScrambleId) {
-            scrambleAudio.pause();
-            scrambleAudio.currentTime = 0;
             return;
         }
 
@@ -46,9 +45,6 @@ function scrambleReveal(text, scrambleTime, revealTime, onUpdate, onComplete) {
         if (progress < 1) {
             requestAnimationFrame(loop);
         } else {
-            scrambleAudio.pause();
-            scrambleAudio.currentTime = 0;
-
             onUpdate("_" + text + "_");
 
             canResolve = true;

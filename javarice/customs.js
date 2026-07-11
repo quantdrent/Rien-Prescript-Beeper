@@ -155,7 +155,9 @@ function handleDeviceCustomsSync(deviceCustomStrings) {
         localCustoms = (typeof saved[0] === 'string') ? saved.map(stringToPrescript) : saved;
     }
 
-    if (localCustoms.length === 0 || JSON.stringify(localCustoms) === JSON.stringify(deviceCustoms)) {
+    if (deviceCustoms.length === 0 && localCustoms.length > 0) {
+        syncCustomsToDevice();
+    } else if (localCustoms.length === 0 || JSON.stringify(localCustoms) === JSON.stringify(deviceCustoms)) {
         updateCustomPrescriptsList(deviceCustoms);
     } else {
         pendingDeviceCustoms = deviceCustoms;

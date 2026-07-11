@@ -98,6 +98,11 @@ void loop() {
   handleBLE();
   updateScramble();
   handleDisplayTimer();
+  
+  if (!displayScrambling) {
+    flushStatsIfNeeded();
+  }
+  
   yield();
 }
 
@@ -146,15 +151,17 @@ void handleButtons() {
     simulatePass = false;
     if (passTriggered) passHandled = true;
 
-    if (!isDisplaying && !fromWeb) {
-      String line = getRandomPrescript();
+    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED.");
+    if (isIdleOrFinished && !fromWeb) {
+      int idx = -1;
+      String line = getRandomPrescript(&idx);
       if (line.length() > 0) {
         int dur = 10;
         String text = "";
         if (parsePrescriptLine(line, dur, text)) {
           showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
-          if (bleuart.notifyEnabled()) {
-            String evt = "EVT:PRESCRIPT|DUR:" + String(dur) + "|MSG:" + text + "\n";
+          if (bleuart.notifyEnabled() && idx >= 0) {
+            String evt = "EVT:PRESCRIPT|IDX:" + String(idx) + "\n";
             sendChunked(evt.c_str(), evt.length());
           }
         }
@@ -165,6 +172,7 @@ void handleButtons() {
       }
     } else {
       if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
+        addStats("1,0,1");
         if (bleuart.notifyEnabled() && !fromWeb) bleuart.print("EVT:PASS\n");
         showPrescriptOnDisplay("CLEAR.", 800, false);
       }
@@ -189,6 +197,7 @@ void handleButtons() {
 
     if (isDisplaying || fromWeb || wasTimeout) {
       if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
+        addStats("0,1,1");
         if (bleuart.notifyEnabled() && !fromWeb) bleuart.print("EVT:FAIL\n");
         showPrescriptOnDisplay("FAILED.", 800, false);
       }

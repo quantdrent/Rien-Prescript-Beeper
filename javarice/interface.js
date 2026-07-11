@@ -14,46 +14,42 @@ function showPlayButton() {
 
 function showResultText(text) {
     canResolve = false;
-    scrambleReveal(text, 0.3, 0.8, t => display.textContent = t, showPlayButton);
+    scrambleReveal(text, 0.3, 0.8, t => display.textContent = t);
 }
 
 function showResultTextIntro(text) {
     scrambleReveal(text, 0.3, 0.8,t => display.textContent = t,);
 }
 
-async function triggerPass() {
+async function triggerPass(fromDevice = false) {
     if (!canResolve) return;
+    canResolve = false;
     if (currentTimer) clearInterval(currentTimer);
     
     showResultText("CLEAR.");
-    if (typeof sendBleCommand === 'function') {
+    showPlayButton();
+    if (typeof sendBleCommand === 'function' && fromDevice !== true) {
         await sendBleCommand("PASS");
     }
     
-    if (typeof txCharacteristic !== 'undefined' && txCharacteristic) {
-        setTimeout(() => {
-            sendBleCommand("ADD_STATS", "1,0,1").catch(console.error);
-        }, 1500);
-    } else {
+    if (fromDevice !== true) {
         achieved++; total++;
         updateCounters();
     }
 }
 
-async function triggerFail() {
+async function triggerFail(fromDevice = false) {
     if (!canResolve) return;
+    canResolve = false;
     if (currentTimer) clearInterval(currentTimer);
     
     showResultText("FAILED.");
-    if (typeof sendBleCommand === 'function') {
+    showPlayButton();
+    if (typeof sendBleCommand === 'function' && fromDevice !== true) {
         await sendBleCommand("FAIL");
     }
     
-    if (typeof txCharacteristic !== 'undefined' && txCharacteristic) {
-        setTimeout(() => {
-            sendBleCommand("ADD_STATS", "0,1,1").catch(console.error);
-        }, 1500);
-    } else {
+    if (fromDevice !== true) {
         failed++; total++;
         updateCounters();
     }
@@ -92,31 +88,39 @@ function showResultButtons(duration) {
 }
 
 async function handlePlayClick() {
-    if (typeof txCharacteristic === 'undefined' || !txCharacteristic) {
-        let line = "";
-        let dur = 10;
-        if (customPrescripts.length > 0) {
-            line = customPrescripts[Math.floor(Math.random() * customPrescripts.length)];
-        } else if (defaultPrescripts.length > 0) {
-            line = defaultPrescripts[Math.floor(Math.random() * defaultPrescripts.length)];
-        } else {
-            line = "10|NO DATA";
-        }
-        
-        let parts = line.split("|");
-        if (parts.length >= 2) {
-            dur = parseInt(parts[0]);
-            if (isNaN(dur)) dur = 10;
-            display.textContent = parts[1];
-        } else {
-            display.textContent = line;
-        }
-        
-        showResultButtons(dur);
-        canResolve = true;
-        document.getElementById("achievedBtn").disabled = false;
-        document.getElementById("failedBtn").disabled = false;
+    let line = "";
+    let dur = 10;
+    let idx = -1;
+    if (typeof customPrescripts !== 'undefined' && customPrescripts.length > 0) {
+        idx = Math.floor(Math.random() * customPrescripts.length);
+        line = customPrescripts[idx];
+    } else if (typeof defaultPrescripts !== 'undefined' && defaultPrescripts.length > 0) {
+        idx = Math.floor(Math.random() * defaultPrescripts.length);
+        line = defaultPrescripts[idx];
     } else {
-        sendBleCommand("NEXT");
+        line = "10|NO DATA";
     }
+    
+    let parts = line.split("|");
+    let text = line;
+    if (parts.length >= 2) {
+        dur = parseInt(parts[0]);
+        if (isNaN(dur)) dur = 10;
+        text = parts[1];
+    }
+    
+    if (typeof txCharacteristic !== 'undefined' && txCharacteristic && idx !== -1) {
+        sendBleCommand("SHOW_IDX:" + idx);
+    }
+    
+    if (typeof scrambleReveal === 'function') {
+        scrambleReveal(text, 0.1, 0.2, t => display.textContent = t);
+    } else {
+        display.textContent = text;
+    }
+    
+    showResultButtons(dur);
+    canResolve = true;
+    document.getElementById("achievedBtn").disabled = false;
+    document.getElementById("failedBtn").disabled = false;
 }

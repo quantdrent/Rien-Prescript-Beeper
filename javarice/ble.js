@@ -62,6 +62,10 @@ async function connectToBeeper() {
             statusEl.style.color = "#99ff99";
         }
         
+        if (typeof showResultTextIntro === 'function') {
+            showResultTextIntro("Connected.");
+        }
+        
         return true;
     } catch (error) {
         console.error("Connection failed!", error);
@@ -107,6 +111,10 @@ function handleIncomingBLEData(event) {
     while (newlineIndex !== -1) {
         let message = incomingBuffer.substring(0, newlineIndex).trim();
         incomingBuffer = incomingBuffer.substring(newlineIndex + 1);
+        isSendingBle = false;
+        if (bleCommandQueue.length > 0) {
+            setTimeout(processBleQueue, 0); 
+        }
         
         if (message.length > 0) {
             parseBleMessage(message);
@@ -119,23 +127,28 @@ function handleIncomingBLEData(event) {
 function parseBleMessage(message) {
     console.log("Received from device:", message);
     if (message === "EVT:PASS") {
-        if (typeof triggerPass === 'function') triggerPass();
+        if (typeof triggerPass === 'function') triggerPass(true);
     } else if (message === "EVT:FAIL") {
-        if (typeof triggerFail === 'function') triggerFail();
+        if (typeof triggerFail === 'function') triggerFail(true);
     } else if (message.startsWith("EVT:PRESCRIPT|")) {
-        let durMatch = message.match(/DUR:(\d+)/);
-        let msgMatch = message.match(/MSG:(.+)$/);
-        if (durMatch && msgMatch) {
-            let dur = parseInt(durMatch[1]);
-            let text = msgMatch[1];
-            if (typeof scrambleReveal === 'function') {
-                scrambleReveal(text, 0.3, 0.8, t => display.textContent = t);
-            }
-            if (typeof showResultButtons === 'function') {
-                showResultButtons(dur);
-                canResolve = true;
-                document.getElementById("achievedBtn").disabled = false;
-                document.getElementById("failedBtn").disabled = false;
+        let idxMatch = message.match(/IDX:(\d+)/);
+        if (idxMatch) {
+            let idx = parseInt(idxMatch[1]);
+            if (typeof customPrescripts !== 'undefined' && idx >= 0 && idx < customPrescripts.length) {
+                let prescript = customPrescripts[idx];
+                let dur = prescript.duration;
+                let text = prescript.text;
+                if (typeof scrambleReveal === 'function') {
+                    scrambleReveal(text, 0.1, 0.2, t => display.textContent = t);
+                }
+                if (typeof showResultButtons === 'function') {
+                    showResultButtons(dur);
+                    canResolve = true;
+                    document.getElementById("achievedBtn").disabled = false;
+                    document.getElementById("failedBtn").disabled = false;
+                }
+            } else {
+                console.warn("Received prescript index out of bounds or customPrescripts not loaded.");
             }
         }
     } else if (message.startsWith("RES:CUSTOMS|")) {

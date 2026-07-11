@@ -21,6 +21,12 @@ int scrambleDurationFrames = DEFAULT_SCRAMBLE_FRAMES;
 int scrambleDelayMs = DEFAULT_SCRAMBLE_DELAY;
 int revealDelayMs = DEFAULT_REVEAL_DELAY;
 
+int cachedTotalPrescripts = -1;
+
+void invalidatePrescriptCache() {
+  cachedTotalPrescripts = -1;
+}
+
 void readSettings() {
   File f(SETTINGS_FILE, FILE_O_READ, InternalFS);
   if (f) {
@@ -51,6 +57,11 @@ void writeSettings() {
     f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs));
     f.close();
   }
+}
+
+void clearCustoms() {
+  InternalFS.remove(CUSTOMS_FILE);
+  invalidatePrescriptCache();
 }
 
 void sendSettings() {
@@ -94,25 +105,43 @@ void writeStatsToFile(Stats s) {
   }
 }
 
+Stats currentStats = {0, 0, 0};
+bool statsLoaded = false;
+bool statsDirty = false;
+
+void initStats() {
+  if (!statsLoaded) {
+    currentStats = readStatsFromFile();
+    statsLoaded = true;
+  }
+}
+
 void sendStats() {
   if (!bleNotifyReady()) return;
-  Stats s = readStatsFromFile();
-  String msg = "RES:STATS|MSG:" + String(s.achieved) + "," + String(s.failed) + "," + String(s.total) + "\n";
+  initStats();
+  String msg = "RES:STATS|MSG:" + String(currentStats.achieved) + "," + String(currentStats.failed) + "," + String(currentStats.total) + "\n";
   sendChunked(msg.c_str(), msg.length());
 }
 
 void addStats(String diffData) {
+  initStats();
   Stats diff = parseCSV(diffData);
   if (diff.achieved > 0) Serial.println("PASSED");
   if (diff.failed > 0) Serial.println("FAILED");
 
-  Stats curr = readStatsFromFile();
-  curr.achieved += diff.achieved;
-  curr.failed += diff.failed;
-  curr.total += diff.total;
+  currentStats.achieved += diff.achieved;
+  currentStats.failed += diff.failed;
+  currentStats.total += diff.total;
 
-  writeStatsToFile(curr);
+  statsDirty = true;
   sendStats();
+}
+
+void flushStatsIfNeeded() {
+  if (statsDirty) {
+    writeStatsToFile(currentStats);
+    statsDirty = false;
+  }
 }
 
 void saveCustomRule(String rule) {
@@ -121,6 +150,7 @@ void saveCustomRule(String rule) {
     customsFile.seek(customsFile.size());
     customsFile.println(rule);
     customsFile.close();
+    invalidatePrescriptCache();
   }
 }
 
@@ -170,42 +200,89 @@ void sendCustomRules() {
 }
 
 int countStoredPrescripts() {
+  if (cachedTotalPrescripts != -1) return cachedTotalPrescripts;
   File f(CUSTOMS_FILE, FILE_O_READ, InternalFS);
   if (!f) return 0;
 
   int count = 0;
+  bool hasChars = false;
+  char readBuf[128];
+  
   while (f.available()) {
-    String line = f.readStringUntil('\n');
-    line.trim();
-    if (line.length() > 0) count++;
+    int bytesRead = f.read(readBuf, sizeof(readBuf));
+    for (int i = 0; i < bytesRead; i++) {
+      char c = readBuf[i];
+      if (c == '\n') {
+        if (hasChars) count++;
+        hasChars = false;
+      } else if (c != ' ' && c != '\r') {
+        hasChars = true;
+      }
+    }
   }
+  if (hasChars) count++;
+  
   f.close();
+  cachedTotalPrescripts = count;
   return count;
 }
 
-String getRandomPrescript() {
-  int total = countStoredPrescripts();
-  if (total == 0) return "";
-
-  int target = random(0, total);
-
+String getPrescriptByIndex(int target) {
   File f(CUSTOMS_FILE, FILE_O_READ, InternalFS);
   if (!f) return "";
 
   int current = 0;
   String result = "";
+  char buf[128];
+  int pos = 0;
+  bool hasChars = false;
+  char readBuf[128];
+  
   while (f.available()) {
-    String line = f.readStringUntil('\n');
-    line.trim();
-    if (line.length() == 0) continue;
-    if (current == target) {
-      result = line;
-      break;
+    int bytesRead = f.read(readBuf, sizeof(readBuf));
+    for (int i = 0; i < bytesRead; i++) {
+      char c = readBuf[i];
+      if (c == '\n') {
+        if (hasChars) {
+          if (current == target) {
+            buf[pos] = '\0';
+            result = String(buf);
+            result.trim();
+            f.close();
+            return result;
+          }
+          current++;
+        }
+        pos = 0;
+        hasChars = false;
+      } else {
+        if (c != ' ' && c != '\r') hasChars = true;
+        if (pos < 127) buf[pos++] = c;
+      }
     }
-    current++;
   }
+  
+  if (hasChars && result.length() == 0 && current == target) {
+    buf[pos] = '\0';
+    result = String(buf);
+    result.trim();
+  }
+  
   f.close();
   return result;
+}
+
+String getRandomPrescript(int* outIndex = nullptr) {
+  int total = countStoredPrescripts();
+  if (total == 0) {
+    if (outIndex) *outIndex = -1;
+    return "";
+  }
+
+  int target = random(0, total);
+  if (outIndex) *outIndex = target;
+
+  return getPrescriptByIndex(target);
 }
 
 bool parsePrescriptLine(const String& line, int& outDuration, String& outText) {
