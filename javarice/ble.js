@@ -122,6 +122,22 @@ function parseBleMessage(message) {
         if (typeof triggerPass === 'function') triggerPass();
     } else if (message === "EVT:FAIL") {
         if (typeof triggerFail === 'function') triggerFail();
+    } else if (message.startsWith("EVT:PRESCRIPT|")) {
+        let durMatch = message.match(/DUR:(\d+)/);
+        let msgMatch = message.match(/MSG:(.+)$/);
+        if (durMatch && msgMatch) {
+            let dur = parseInt(durMatch[1]);
+            let text = msgMatch[1];
+            if (typeof scrambleReveal === 'function') {
+                scrambleReveal(text, 0.3, 0.8, t => display.textContent = t);
+            }
+            if (typeof showResultButtons === 'function') {
+                showResultButtons(dur);
+                canResolve = true;
+                document.getElementById("achievedBtn").disabled = false;
+                document.getElementById("failedBtn").disabled = false;
+            }
+        }
     } else if (message.startsWith("RES:CUSTOMS|")) {
         try {
             let jsonStr = message.split("|MSG:")[1];

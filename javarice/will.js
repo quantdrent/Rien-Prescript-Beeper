@@ -21,7 +21,15 @@ function handlePlayClick() {
 startBtn.addEventListener("click", handlePlayClick);
 
 document.addEventListener("DOMContentLoaded", () => {
-    showResultTextIntro("Welcome back ####.");
+    const overlay = document.getElementById("initOverlay");
+    if (overlay) {
+        overlay.addEventListener("click", () => {
+            overlay.style.display = "none";
+            showResultTextIntro("Welcome back ####.");
+        });
+    } else {
+        showResultTextIntro("Welcome back ####.");
+    }
 });
 
 function triggerManualPrescript(text, duration = 10) {

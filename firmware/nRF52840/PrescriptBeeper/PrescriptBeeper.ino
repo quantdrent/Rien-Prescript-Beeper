@@ -15,24 +15,24 @@ bool failHandled = false;
 unsigned long powerPressedTime = 0;
 
 void enterSleep() {
-  Serial.println("SLEEP STEP 1: CLEARING DISPLAY");
+  Serial.println("CLEARING DISPLAY");
   isDisplaying = false;
   currentDisplayText = "";
   displayIdle();
   tft.fillScreen(COLOR_BG);
   
-  Serial.println("SLEEP STEP 2: STOPPING BLE");
+  Serial.println("STOPPING BLE");
   Bluefruit.Advertising.stop();
   if (Bluefruit.connected()) {
     Bluefruit.disconnect(Bluefruit.connHandle());
   }
   delay(200);
   
-  Serial.println("SLEEP STEP 3: KILLING VCC");
+  Serial.println("KILLING VCC");
   digitalWrite(EXT_VCC, LOW);
   delay(100);
   
-  Serial.println("SLEEP STEP 4: WAITING FOR BUTTON RELEASE");
+  Serial.println("WAITING FOR BUTTON RELEASE");
   while(digitalRead(BUTTON_POWER_PIN) == LOW) {
     delay(10);
   }
@@ -41,7 +41,7 @@ void enterSleep() {
   Serial.println("SLEEP STEP 5: CONFIGURING WAKEUP PIN");
   nrf_gpio_cfg_sense_input(g_ADigitalPinMap[BUTTON_POWER_PIN], NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
   
-  Serial.println("SLEEP STEP 6: ENTERING SYSTEM OFF");
+  Serial.println("ENTERING SYSTEM OFF");
   Serial.flush();
   delay(100);
   
@@ -81,6 +81,15 @@ void setup() {
 
   readSettings();
   randomSeed(analogRead(A0));
+
+  lastPassState = digitalRead(BUTTON_PASS_PIN);
+  lastFailState = digitalRead(BUTTON_FAIL_PIN);
+  lastPowerState = digitalRead(BUTTON_POWER_PIN);
+  passHandled = true;
+  failHandled = true;
+  lastDebounceTimePass = millis();
+  lastDebounceTimeFail = millis();
+  lastDebounceTimePower = millis();
 }
 
 void loop() {
@@ -95,6 +104,7 @@ void loop() {
 bool simulatePass = false;
 bool simulateFail = false;
 bool timerTimeoutFail = false;
+bool hasShownPrescript = false;
 
 void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool infinite) {
   currentDisplayText = String(text);
@@ -105,12 +115,14 @@ void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool inf
   beginScramble(text);
 
   displayStartTime = millis();
+  hasShownPrescript = true;
 }
 
 void handleDisplayTimer() {
+  if (!hasShownPrescript) return;
   if (isDisplaying && !isInfinite && !displayScrambling) {
     if (millis() - displayFinishedTime >= displayDurationMs) {
-      if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
+      if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected.") {
         timerTimeoutFail = true;
       } else {
         isDisplaying = false;
@@ -141,6 +153,10 @@ void handleButtons() {
         String text = "";
         if (parsePrescriptLine(line, dur, text)) {
           showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
+          if (bleuart.notifyEnabled()) {
+            String evt = "EVT:PRESCRIPT|DUR:" + String(dur) + "|MSG:" + text + "\n";
+            sendChunked(evt.c_str(), evt.length());
+          }
         }
       } else {
         displayStatus("NO DATA");

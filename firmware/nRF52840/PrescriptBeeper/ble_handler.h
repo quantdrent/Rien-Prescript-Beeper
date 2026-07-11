@@ -57,6 +57,22 @@ void parseCommand(String message) {
   else if (message == "CMD:FAIL") {
     simulateFail = true;
   }
+  else if (message == "CMD:NEXT") {
+    if (!isDisplaying) {
+      String line = getRandomPrescript();
+      if (line.length() > 0) {
+        int dur = 10;
+        String text = "";
+        if (parsePrescriptLine(line, dur, text)) {
+          showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
+          if (bleuart.notifyEnabled()) {
+            String evt = "EVT:PRESCRIPT|DUR:" + String(dur) + "|MSG:" + text + "\n";
+            sendChunked(evt.c_str(), evt.length());
+          }
+        }
+      }
+    }
+  }
   else if (message.startsWith("CMD:SHOW")) {
     int durIndex = message.indexOf("DUR:");
     int msgIndex = message.indexOf("MSG:");

@@ -117,10 +117,6 @@ async function handlePlayClick() {
         document.getElementById("achievedBtn").disabled = false;
         document.getElementById("failedBtn").disabled = false;
     } else {
-        await sendBleCommand("SHOW", `DUR:10|MSG:Loading...`);
-        showResultButtons(10);
-        canResolve = true;
-        document.getElementById("achievedBtn").disabled = false;
-        document.getElementById("failedBtn").disabled = false;
+        sendBleCommand("NEXT");
     }
 }
