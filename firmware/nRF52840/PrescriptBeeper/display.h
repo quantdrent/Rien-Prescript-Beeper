@@ -1,6 +1,12 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
+extern int timerPosition;
+extern float timerScale;
+extern int textScale;
+extern bool isInfinite;
+extern unsigned long displayDurationMs;
+
 #include "ST7789_nRF52840.h"
 #include "config.h"
 
@@ -86,6 +92,13 @@ static char workLines[6][32];
 static int g_lineX[6];
 static int g_lineCount, g_startY, g_charW, g_charH, g_sz;
 
+static char timerFinalStr[16];
+static char timerWorkStr[16];
+static char timerScreenStr[16];
+static int g_timerX = 0, g_timerY = 0;
+static int g_timerSz = 1;
+static int g_timerCharW = 0, g_timerCharH = 0;
+
 static bool displayScrambling = false;
 static unsigned long displayScrambleStartTime = 0;
 static unsigned long displayLastUpdate = 0;
@@ -104,6 +117,73 @@ void drawLinesDiff() {
       }
     }
   }
+}
+
+void drawTimerDiff() {
+  if (timerFinalStr[0] == '\0') return;
+  
+  int len = strlen(timerWorkStr);
+  int screenLen = strlen(timerScreenStr);
+  
+  for (int j = len; j < screenLen; j++) {
+    tft.drawChar(g_timerX + j * g_timerCharW, g_timerY, ' ', COLOR_TEXT, COLOR_BG, g_timerSz);
+    timerScreenStr[j] = '\0';
+  }
+  
+  for (int j = 0; j < len; j++) {
+    if (timerScreenStr[j] != timerWorkStr[j]) {
+      tft.drawChar(g_timerX + j * g_timerCharW, g_timerY, timerWorkStr[j], COLOR_TEXT, COLOR_BG, g_timerSz);
+      timerScreenStr[j] = timerWorkStr[j];
+    }
+  }
+}
+
+void updateTimerDisplay(unsigned long remainingMs) {
+  if (timerPosition == 0 || isInfinite || timerFinalStr[0] == '\0') return;
+  
+  char newTimerStr[16];
+  snprintf(newTimerStr, sizeof(newTimerStr), "%lus", (remainingMs + 999) / 1000);
+  
+  if (strcmp(timerFinalStr, newTimerStr) != 0) {
+    strcpy(timerFinalStr, newTimerStr);
+    
+    if (!displayScrambling) {
+      strcpy(timerWorkStr, timerFinalStr);
+      drawTimerDiff();
+    }
+  }
+}
+
+void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
+  if (timerPosition == 0 || durationMs == 0 || isInfinite) {
+    timerFinalStr[0] = '\0';
+    return;
+  }
+  
+  if (strcmp(targetText, "CLEAR.") == 0 || strcmp(targetText, "FAILED.") == 0 || strcmp(targetText, "Connected.") == 0 || strcmp(targetText, "NO DATA") == 0) {
+    timerFinalStr[0] = '\0';
+    return;
+  }
+  
+  snprintf(timerFinalStr, sizeof(timerFinalStr), "%lus", durationMs / 1000);
+  
+  g_timerSz = (int)(textScale * timerScale);
+  if (g_timerSz < 1) g_timerSz = 1;
+  g_timerCharW = g_timerSz * 6;
+  g_timerCharH = g_timerSz * 8;
+  
+  int len = strlen(timerFinalStr);
+  int w = len * g_timerCharW;
+  
+  if (timerPosition == 1 || timerPosition == 4) g_timerX = 5; 
+  else if (timerPosition == 2 || timerPosition == 5) g_timerX = (TFT_WIDTH - w) / 2; 
+  else if (timerPosition == 3 || timerPosition == 6) g_timerX = TFT_WIDTH - w - 5; 
+  
+  if (timerPosition >= 1 && timerPosition <= 3) g_timerY = 5; 
+  else g_timerY = TFT_HEIGHT - g_timerCharH - 5; 
+  
+  memset(timerScreenStr, 0, sizeof(timerScreenStr));
+  memset(timerWorkStr, 0, sizeof(timerWorkStr));
 }
 
 unsigned long displayFinishedTime = 0;
@@ -133,6 +213,8 @@ void beginScramble(const char* targetText) {
 
   tft.fillScreen(COLOR_BG);
 
+  setupTimerDisplay(targetText, displayDurationMs);
+
   displayScrambling = true;
   displayScrambleStartTime = millis();
   displayLastUpdate = 0;
@@ -159,6 +241,13 @@ void updateScramble() {
         }
         workLines[li][llen] = '\0';
       }
+      if (timerFinalStr[0] != '\0') {
+        int tlen = strlen(timerFinalStr);
+        for (int ci = 0; ci < tlen; ci++) {
+          timerWorkStr[ci] = SCRAMBLE_CHARS[random(NUM_SCRAMBLE_CHARS)];
+        }
+        timerWorkStr[tlen] = '\0';
+      }
     } else {
       for (int c = 0; c < 8; c++) {
         int li = random(g_lineCount);
@@ -168,8 +257,16 @@ void updateScramble() {
           workLines[li][ci] = SCRAMBLE_CHARS[random(NUM_SCRAMBLE_CHARS)];
         }
       }
+      if (timerFinalStr[0] != '\0') {
+        int tlen = strlen(timerFinalStr);
+        if (tlen > 0) {
+          int ci = random(tlen);
+          timerWorkStr[ci] = SCRAMBLE_CHARS[random(NUM_SCRAMBLE_CHARS)];
+        }
+      }
     }
     drawLinesDiff();
+    drawTimerDiff();
     
     displayScrambleFrames++;
     if (displayScrambleFrames >= scrambleDurationFrames) {
@@ -190,6 +287,18 @@ void updateScramble() {
       workLines[li][llen] = '\0';
     }
     
+    if (timerFinalStr[0] != '\0') {
+      int tlen = strlen(timerFinalStr);
+      for (int ci = 0; ci < tlen; ci++) {
+        if (displayRevealLine > 0 || (displayRevealLine == 0 && ci <= displayRevealChar)) {
+          timerWorkStr[ci] = timerFinalStr[ci];
+        } else {
+          timerWorkStr[ci] = SCRAMBLE_CHARS[random(NUM_SCRAMBLE_CHARS)];
+        }
+      }
+      timerWorkStr[tlen] = '\0';
+    }
+    
     for (int c = 0; c < 8; c++) {
       int li = random(g_lineCount);
       int llen = strlen(finalLines[li]);
@@ -200,7 +309,9 @@ void updateScramble() {
         }
       }
     }
+    
     drawLinesDiff();
+    drawTimerDiff();
     
     displayRevealChar++;
     if (displayRevealChar >= (int)strlen(finalLines[displayRevealLine])) {
@@ -214,6 +325,11 @@ void updateScramble() {
           strcpy(workLines[li], finalLines[li]);
         }
         drawLinesDiff();
+        
+        if (timerFinalStr[0] != '\0') {
+          strcpy(timerWorkStr, timerFinalStr);
+          drawTimerDiff();
+        }
       }
     }
   }

@@ -13,6 +13,7 @@ int lastPowerState = HIGH;
 bool passHandled = false;
 bool failHandled = false;
 unsigned long powerPressedTime = 0;
+bool bleRequirePin = false;
 
 void enterSleep() {
   Serial.println("CLEARING DISPLAY");
@@ -56,6 +57,7 @@ unsigned long displayDurationMs = 0;
 bool isDisplaying = false;
 bool isInfinite = false;
 String currentDisplayText = "";
+bool pendingDisplayUpdate = false;
 
 void setup() {
   Serial.begin(115200);
@@ -68,6 +70,8 @@ void setup() {
   digitalWrite(EXT_VCC, HIGH);
 
   InternalFS.begin();
+  readSettings();
+  
   displayInit();
   displayIdle();
 
@@ -79,7 +83,6 @@ void setup() {
   NRF_WDT->RREN = 0x01;
   NRF_WDT->TASKS_START = 1;
 
-  readSettings();
   randomSeed(analogRead(A0));
 
   lastPassState = digitalRead(BUTTON_PASS_PIN);
@@ -98,7 +101,29 @@ void loop() {
   handleBLE();
   updateScramble();
   handleDisplayTimer();
-  
+  if (pendingDisplayUpdate) {
+    pendingDisplayUpdate = false;
+    if (String(pendingDisplayText).startsWith("PIN: ")) {
+      showPrescriptOnDisplay(pendingDisplayText, 30000, false, false);
+    } else {
+      showPrescriptOnDisplay(pendingDisplayText, 2000, false, true);
+    }
+  }
+
+  static String serialBuffer = "";
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\n') {
+      serialBuffer.trim();
+      if (serialBuffer.length() > 0) {
+        parseCommand(serialBuffer);
+      }
+      serialBuffer = "";
+    } else {
+      serialBuffer += c;
+    }
+  }
+
   if (!displayScrambling) {
     flushStatsIfNeeded();
   }
@@ -110,12 +135,20 @@ bool simulatePass = false;
 bool simulateFail = false;
 bool timerTimeoutFail = false;
 bool hasShownPrescript = false;
+bool requiresResponse = true;
 
-void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool infinite) {
+void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool infinite, bool respond) {
   currentDisplayText = String(text);
   isDisplaying = true;
   isInfinite = infinite;
   displayDurationMs = durationMs;
+  requiresResponse = respond;
+
+  if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected.") {
+    if (!currentDisplayText.startsWith("PIN: ")) {
+      addStats("0,0,1");
+    }
+  }
 
   beginScramble(text);
 
@@ -126,8 +159,11 @@ void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool inf
 void handleDisplayTimer() {
   if (!hasShownPrescript) return;
   if (isDisplaying && !isInfinite && !displayScrambling) {
-    if (millis() - displayFinishedTime >= displayDurationMs) {
-      if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected.") {
+    unsigned long elapsed = millis() - displayFinishedTime;
+    if (elapsed < displayDurationMs) {
+      updateTimerDisplay(displayDurationMs - elapsed);
+    } else {
+      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && !currentDisplayText.startsWith("PIN: ")) {
         timerTimeoutFail = true;
       } else {
         isDisplaying = false;
@@ -151,15 +187,16 @@ void handleButtons() {
     simulatePass = false;
     if (passTriggered) passHandled = true;
 
-    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED.");
+    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED." || currentDisplayText == "Connected." || !requiresResponse);
     if (isIdleOrFinished && !fromWeb) {
       int idx = -1;
       String line = getRandomPrescript(&idx);
       if (line.length() > 0) {
         int dur = 10;
+        bool respond = true;
         String text = "";
-        if (parsePrescriptLine(line, dur, text)) {
-          showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
+        if (parsePrescriptLine(line, dur, respond, text)) {
+          showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false, respond);
           if (bleuart.notifyEnabled() && idx >= 0) {
             String evt = "EVT:PRESCRIPT|IDX:" + String(idx) + "\n";
             sendChunked(evt.c_str(), evt.length());
@@ -171,8 +208,8 @@ void handleButtons() {
         displayIdle();
       }
     } else {
-      if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
-        addStats("1,0,1");
+      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
+        addStats("1,0,0");
         if (bleuart.notifyEnabled() && !fromWeb) bleuart.print("EVT:PASS\n");
         showPrescriptOnDisplay("CLEAR.", 800, false);
       }
@@ -196,10 +233,12 @@ void handleButtons() {
     if (failTriggered) failHandled = true;
 
     if (isDisplaying || fromWeb || wasTimeout) {
-      if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
-        addStats("0,1,1");
+      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
+        addStats("0,1,0");
         if (bleuart.notifyEnabled() && !fromWeb) bleuart.print("EVT:FAIL\n");
         showPrescriptOnDisplay("FAILED.", 800, false);
+      } else if (!requiresResponse && wasTimeout) {
+        displayIdle();
       }
     }
   }

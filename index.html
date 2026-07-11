@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <button id="settingsBtn" disabled>_Settings_</button>
+    <button id="settingsBtn">_Settings_</button>
     <div id="topNavbar">
         <button id="bleConnectBtn">_Pair Device_</button>
         <button id="customsBtn">_Prescripts_</button>
@@ -52,11 +52,26 @@
             <span id="closeCustoms">&times;</span>
             <h2>Prescript Storage</h2>
             <div id="customsList">No custom prescripts loaded. Connect device first.</div>
-            <div style="margin-top: 20px;">
-                <input type="text" id="newCustomInput" placeholder="Enter new prescript">
-                <input type="number" id="newCustomDuration" placeholder="Secs" value="10" min="1">
-                <button id="addCustomBtn">Add</button>
-                <button id="sendCustomBtn">Send</button>
+            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="newCustomInput" placeholder="Enter new prescript" style="flex: 1;">
+                    <input type="number" id="newCustomDuration" placeholder="Secs" value="10" min="1" style="width: 60px;">
+                    <label style="display: flex; align-items: center; font-size: 0.85em; color: #aaa; cursor: pointer; white-space: nowrap;">
+                        Res: <input type="checkbox" id="newCustomRespond" checked style="margin-left: 5px;">
+                    </label>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="addCustomBtn" style="flex: 1;">ADD</button>
+                    <button id="sendCustomBtn" style="flex: 1;">SEND MANUAL</button>
+                </div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;">
+            
+            <div style="display: flex; gap: 8px;">
+                <button id="exportPrescriptsBtn" style="flex: 1;">EXPORT .TXT</button>
+                <button id="importPrescriptsBtn" style="flex: 1;">IMPORT .TXT</button>
+                <input type="file" id="importFileInput" accept=".txt" style="display: none;">
             </div>
         </div>
     </div>
@@ -76,8 +91,8 @@
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <span id="closeSettings">&times;</span>
-            <h2>Device Settings</h2>
-            <div style="margin-top: 20px;">
+            <h2>Settings</h2>
+            <div class="modal-body">
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     Global Text Scale:
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -87,7 +102,35 @@
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Base font size multiplier for the device screen.</p>
                 
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Timer Position:
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="timerPositionInput" style="padding: 5px; background: #000; color: #99edff; border: 1px solid #99edff; font-family: 'code', monospace;">
+                            <option value="0">None (Default)</option>
+                            <option value="1">Top Left</option>
+                            <option value="2">Top Middle</option>
+                            <option value="3">Top Right</option>
+                            <option value="4">Bottom Left</option>
+                            <option value="5">Bottom Middle</option>
+                            <option value="6">Bottom Right</option>
+                        </select>
+                        <img src="img/refresh.svg" id="resetTimerPosition" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Where to anchor the countdown timer during a prescript.</p>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Timer Scale Multiplier:
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="timerScaleInput" value="5" step="1" min="1" max="50">
+                        <img src="img/refresh.svg" id="resetTimerScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Scales the timer relative to the Global Text Scale (10 = 1x, 5 = 0.5x).</p>
+                
                 <hr style="border: 1px solid #333; margin: 15px 0;">
+                
+
                 
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     Scramble Frames:
@@ -115,9 +158,18 @@
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Delay per letter when revealing (lower = faster).</p>
-
-                <button id="saveSettingsBtn" style="width: 100%; margin-top: 10px;">Save Settings</button>
+                
+                <hr style="border: 1px solid #333; margin: 15px 0;">
+                
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="pinToggle" style="transform: scale(1.2); cursor: pointer;">
+                        Require Bluetooth PIN:
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">When connecting, a 6-digit PIN will be generated and displayed on the device screen.<br><span style="color: #ff9999;">You may need to retry a couple of times if the connection fails. if you run into issues, connect via USB and send <code>CMD:FACTORY_RESET</code> via Serial Monitor and upload the firmware again.</span></p>
             </div>
+            <button id="saveSettingsBtn" style="width: 100%; margin-top: 10px; padding: 10px; background: #99edff; color: #000; font-weight: bold; font-family: 'code', monospace;">Save Settings & Reboot</button>
         </div>
     </div>
 
@@ -125,5 +177,18 @@
     <a id="guideLink" href="https://github.com/quantdrent/Rien-Prescript-Beeper" target="_blank" rel="noopener noreferrer">_Beeper Device Guide_</a>
     <button id="factoryResetBtn" disabled>_RESET DEVICE_</button>
     <a id="forkLink" href="https://kritzkingvoid.github.io/Prescripts/" target="_blank" rel="noopener noreferrer">_Forked from Kritzkingvoid_</a>
+    <div id="authModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 300px; text-align: center;">
+            <div class="modal-header">
+                <h2>AUTHENTICATION</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #99edff; font-size: 0.9em;">Enter the 6-digit PIN displayed on the Beeper.</p>
+                <input type="text" id="authPinInput" maxlength="6" inputmode="numeric" style="width: 100%; text-align: center; font-size: 1.5em; letter-spacing: 5px; margin-bottom: 15px;" placeholder="------">
+            </div>
+            <button id="authSubmitBtn" style="width: 100%; padding: 10px; background: #99edff; color: #000; font-weight: bold; font-family: 'code', monospace;">Unlock</button>
+        </div>
+    </div>
+
 </body>
 </html>

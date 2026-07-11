@@ -1,6 +1,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <Arduino.h>
+
+extern int textScale;
+extern int scrambleDurationFrames;
+extern int scrambleDelayMs;
+extern int revealDelayMs;
+extern int timerPosition;
+extern float timerScale;
+extern bool bleRequirePin;
+
 #define TFT_CS    D5
 #define TFT_DC    D6
 #define TFT_RST   D7

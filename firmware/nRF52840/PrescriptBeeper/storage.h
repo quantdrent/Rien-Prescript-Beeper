@@ -20,6 +20,8 @@ int textScale = DEFAULT_TEXT_SCALE;
 int scrambleDurationFrames = DEFAULT_SCRAMBLE_FRAMES;
 int scrambleDelayMs = DEFAULT_SCRAMBLE_DELAY;
 int revealDelayMs = DEFAULT_REVEAL_DELAY;
+int timerPosition = 0;
+float timerScale = 1.0;
 
 int cachedTotalPrescripts = -1;
 
@@ -38,13 +40,30 @@ void readSettings() {
       int c2 = content.indexOf(',', c1 + 1);
       int c3 = content.indexOf(',', c2 + 1);
       
+      int c4 = content.indexOf(',', c3 + 1);
+      int c5 = content.indexOf(',', c4 + 1);
+      int c6 = content.indexOf(',', c5 + 1);
+      
       if (c1 == -1) {
         textScale = content.toInt();
       } else {
         textScale = content.substring(0, c1).toInt();
         scrambleDurationFrames = content.substring(c1 + 1, c2 == -1 ? content.length() : c2).toInt();
         if (c2 != -1) scrambleDelayMs = content.substring(c2 + 1, c3 == -1 ? content.length() : c3).toInt();
-        if (c3 != -1) revealDelayMs = content.substring(c3 + 1).toInt();
+        
+        if (c4 != -1 && c5 != -1) {
+          revealDelayMs = content.substring(c3 + 1, c4).toInt();
+          timerPosition = content.substring(c4 + 1, c5).toInt();
+          
+          if (c6 != -1) {
+            timerScale = content.substring(c5 + 1, c6).toFloat();
+            bleRequirePin = content.substring(c6 + 1).toInt() != 0;
+          } else {
+            timerScale = content.substring(c5 + 1).toFloat();
+          }
+        } else {
+          if (c3 != -1) revealDelayMs = content.substring(c3 + 1).toInt();
+        }
       }
     }
   }
@@ -54,7 +73,7 @@ void writeSettings() {
   InternalFS.remove(SETTINGS_FILE);
   File f(SETTINGS_FILE, FILE_O_WRITE, InternalFS);
   if (f) {
-    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs));
+    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0));
     f.close();
   }
 }
@@ -66,7 +85,7 @@ void clearCustoms() {
 
 void sendSettings() {
   if (!bleNotifyReady()) return;
-  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "\n";
+  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "\n";
   sendChunked(msg.c_str(), msg.length());
 }
 
@@ -285,16 +304,27 @@ String getRandomPrescript(int* outIndex = nullptr) {
   return getPrescriptByIndex(target);
 }
 
-bool parsePrescriptLine(const String& line, int& outDuration, String& outText) {
-  int sep = line.indexOf('|');
-  if (sep == -1 || sep > 4) {
+bool parsePrescriptLine(const String& line, int& outDuration, bool& outRespond, String& outText) {
+  int sep1 = line.indexOf('|');
+  if (sep1 == -1 || sep1 > 4) {
     outDuration = 10;
+    outRespond = true;
     outText = line;
     return true;
   }
-  outDuration = line.substring(0, sep).toInt();
+  
+  int sep2 = line.indexOf('|', sep1 + 1);
+  if (sep2 != -1 && sep2 - sep1 <= 2) {
+    outDuration = line.substring(0, sep1).toInt();
+    outRespond = (line.substring(sep1 + 1, sep2) != "0");
+    outText = line.substring(sep2 + 1);
+  } else {
+    outDuration = line.substring(0, sep1).toInt();
+    outRespond = true;
+    outText = line.substring(sep1 + 1);
+  }
+  
   if (outDuration <= 0) outDuration = 10;
-  outText = line.substring(sep + 1);
   return outText.length() > 0;
 }
 

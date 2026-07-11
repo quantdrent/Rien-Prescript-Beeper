@@ -25,16 +25,16 @@ You also need access to a 3d printer to print the case check models folder.
 ## Instructions
 > Look up "how to setup (boardname) Arduino IDE" before proceeding, for nrf52840 check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones
 > For nr52840 dont forget to solder boost (two pads) if ur batt is more than 500
-1. Solder Everything based on your wiring or you can follow the schematics in images folder if you are using a nrf52840 
+1. Download the firmware in released and pick your microcontroller or click code then Download Zip to get offline version of the site aswell as the firmwares
 2. Open the firmware folder, open the nrf52840 and open the .ino
-3. Open config.h and tweak the gpio if you are not using the nrf52840
-4. Upload the sketch
-5. Open [this page](https://quantdrent.github.io/Rien-Prescript-Beeper/)
-6. Click pair and find your device
-7. click prescrits on the top middle and you can add or remove your saved prescripts
-8. click the button on the middle of the screen to send a random prescripts
-9. you can also get a random prescripts by pressing the buttons on your physical device
-10. you can factory reset by pressing the red button on bottom right
+3. Solder Everything based on your .config 
+5. Upload the sketch
+6. Open [this page](https://quantdrent.github.io/Rien-Prescript-Beeper/) or the html
+7. Click pair and find your device
+8. click prescrits on the top middle and you can add or remove your saved prescripts aswell as export or import (follow the template by exporting first)
+9. click the button on the middle of the screen to send a random prescripts
+10. you can also get a random prescripts by pressing the buttons on your physical device
+11. you can factory reset by pressing the red button on bottom right
 
 ## Images
 wip.

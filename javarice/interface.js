@@ -33,7 +33,7 @@ async function triggerPass(fromDevice = false) {
     }
     
     if (fromDevice !== true) {
-        achieved++; total++;
+        achieved++;
         updateCounters();
     }
 }
@@ -50,24 +50,29 @@ async function triggerFail(fromDevice = false) {
     }
     
     if (fromDevice !== true) {
-        failed++; total++;
+        failed++;
         updateCounters();
     }
 }
 
-function showResultButtons(duration) {
+function showResultButtons(duration, respond = true) {
     canResolve = false; 
 
     let timeLeft = duration || 10;
 
-    buttonContainer.innerHTML = `
-        <button id="achievedBtn" disabled>Pass</button>
-        <div id="timerDisplay">${timeLeft}s</div>
-        <button id="failedBtn" disabled>Failed</button>
-    `;
-
-    document.getElementById("achievedBtn").onclick = triggerPass;
-    document.getElementById("failedBtn").onclick = triggerFail;
+    if (respond) {
+        buttonContainer.innerHTML = `
+            <button id="achievedBtn" disabled>Pass</button>
+            <div id="timerDisplay">${timeLeft}s</div>
+            <button id="failedBtn" disabled>Failed</button>
+        `;
+        document.getElementById("achievedBtn").onclick = triggerPass;
+        document.getElementById("failedBtn").onclick = triggerFail;
+    } else {
+        buttonContainer.innerHTML = `
+            <div id="timerDisplay" style="font-size: 1.5em; padding: 10px;">${timeLeft}s</div>
+        `;
+    }
 
     if (currentTimer) clearInterval(currentTimer);
     
@@ -80,33 +85,35 @@ function showResultButtons(duration) {
             if (timerEl) timerEl.textContent = `${timeLeft}s`;
         } else {
             clearInterval(currentTimer);
-            if (typeof triggerFail === 'function') {
-                triggerFail();
+            if (respond) {
+                if (typeof triggerFail === 'function') {
+                    triggerFail();
+                }
+            } else {
+                showResultTextIntro("CLEAR.");
+                showPlayButton();
             }
         }
     }, 1000);
 }
 
 async function handlePlayClick() {
-    let line = "";
     let dur = 10;
+    let text = "NO DATA";
+    let respond = true;
     let idx = -1;
-    if (typeof customPrescripts !== 'undefined' && customPrescripts.length > 0) {
-        idx = Math.floor(Math.random() * customPrescripts.length);
-        line = customPrescripts[idx];
-    } else if (typeof defaultPrescripts !== 'undefined' && defaultPrescripts.length > 0) {
-        idx = Math.floor(Math.random() * defaultPrescripts.length);
-        line = defaultPrescripts[idx];
-    } else {
-        line = "10|NO DATA";
-    }
     
-    let parts = line.split("|");
-    let text = line;
-    if (parts.length >= 2) {
-        dur = parseInt(parts[0]);
-        if (isNaN(dur)) dur = 10;
-        text = parts[1];
+    if (typeof pickMessage === 'function') {
+        let picked = pickMessage();
+        if (picked) {
+            dur = picked.duration || 10;
+            text = picked.text;
+            respond = picked.respond !== false;
+            
+            if (typeof customPrescripts !== 'undefined') {
+                idx = customPrescripts.findIndex(p => p.text === text && p.duration === dur);
+            }
+        }
     }
     
     if (typeof txCharacteristic !== 'undefined' && txCharacteristic && idx !== -1) {
@@ -114,13 +121,44 @@ async function handlePlayClick() {
     }
     
     if (typeof scrambleReveal === 'function') {
-        scrambleReveal(text, 0.1, 0.2, t => display.textContent = t);
+        scrambleReveal(text, scrambleDuration, revealDuration, t => display.textContent = t);
     } else {
         display.textContent = text;
     }
     
-    showResultButtons(dur);
+    showResultButtons(dur, respond);
     canResolve = true;
-    document.getElementById("achievedBtn").disabled = false;
-    document.getElementById("failedBtn").disabled = false;
+    if (respond) {
+        document.getElementById("achievedBtn").disabled = false;
+        document.getElementById("failedBtn").disabled = false;
+    }
+    
+    total++;
+    updateCounters();
+}
+
+function triggerManualPrescript(text, duration = 10, respond = true) {
+    if (typeof sendBleMessage === 'function') {
+        sendBleMessage(text, duration, respond);
+    }
+    
+    if (typeof scrambleReveal === 'function') {
+        scrambleReveal(text, scrambleDuration, revealDuration, t => display.textContent = t);
+    } else {
+        display.textContent = text;
+    }
+    
+    showResultButtons(duration, respond);
+    canResolve = true;
+    if (respond) {
+        document.getElementById("achievedBtn").disabled = false;
+        document.getElementById("failedBtn").disabled = false;
+    }
+    
+    total++;
+    updateCounters();
+}
+
+if (startBtn) {
+    startBtn.addEventListener("click", handlePlayClick);
 }

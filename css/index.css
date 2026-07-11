@@ -13,6 +13,7 @@ body {
     color: #99caff; 
     font-family: "code", monospace;
     overflow: hidden;
+    color-scheme: dark;
 } 
 #imageHolder {
     position: absolute;
@@ -113,6 +114,9 @@ body {
     padding: 20px;
     width: 80%;
     max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
     color: #99edff;
     box-shadow: 0 0 20px rgba(153, 237, 255, 0.5);
     font-family: "code", monospace;
@@ -137,6 +141,38 @@ body {
 }
 .custom-item span {
     flex-grow: 1;
+}
+
+.modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 15px;
+    margin-bottom: 15px;
+}
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-body::-webkit-scrollbar-track {
+    background: transparent;
+    border-left: 1px dashed #333;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background: #99edff;
+    border-radius: 0;
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #fff;
+}
+
+.modal-content input[type="number"], .modal-content input[type="text"], .modal-content select {
+    padding: 5px;
+    font-family: "code", monospace;
+    background: #000;
+    color: #99edff;
+    border: 1px solid #99edff;
+}
+.modal-content input[type="number"] {
+    width: 60px;
 }
 
 #timerDisplay {
@@ -196,7 +232,7 @@ body {
     color: #99edff;
     border: 1px solid #99edff;
 }
-#addCustomBtn, #saveSettingsBtn, #sendCustomBtn {
+#addCustomBtn, #saveSettingsBtn, #sendCustomBtn, #exportPrescriptsBtn, #importPrescriptsBtn {
     background: none;
     border: 1px solid #99edff;
     color: #99edff;
@@ -204,14 +240,15 @@ body {
     cursor: pointer;
     font-family: "code", monospace;
 }
-#addCustomBtn:hover, #saveSettingsBtn:hover, #sendCustomBtn:hover {
+#addCustomBtn:hover, #saveSettingsBtn:hover, #sendCustomBtn:hover, #exportPrescriptsBtn:hover, #importPrescriptsBtn:hover {
     background: #99edff;
     color: #000;
 }
 
 #customsList {
-    max-height: 50vh;
+    flex-grow: 1;
     overflow-y: auto;
+    min-height: 100px;
     margin-top: 15px;
     padding-right: 5px;
 }
@@ -331,4 +368,11 @@ body {
 .custom-item-duration:focus {
     border: 1px solid #99edff;
     outline: none;
+}
+
+input[type="checkbox"] {
+    accent-color: #99edff;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
 }

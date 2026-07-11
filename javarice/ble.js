@@ -27,48 +27,65 @@ async function connectToBeeper() {
 
         console.log("Requesting Bluetooth Device...");
         bleDevice = await navigator.bluetooth.requestDevice({
-            filters: [{ services: [UART_SERVICE_UUID] }]
+            filters: [{ name: "Beeper" }, { services: [UART_SERVICE_UUID] }],
+            optionalServices: [UART_SERVICE_UUID]
         });
 
         if (statusEl) statusEl.textContent = "_Connecting..._";
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-        console.log("Connecting to GATT Server...");
-        bleServer = await bleDevice.gatt.connect();
+        // Retry GATT connection up to 3 times with delays
+        let connected = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                console.log(`GATT connect attempt ${attempt}...`);
+                bleServer = await bleDevice.gatt.connect();
+                await new Promise(r => setTimeout(r, 300));
 
-        console.log("Getting UART Service...");
-        uartService = await bleServer.getPrimaryService(UART_SERVICE_UUID);
+                console.log("Getting UART Service...");
+                uartService = await bleServer.getPrimaryService(UART_SERVICE_UUID);
+                await new Promise(r => setTimeout(r, 100));
 
-        console.log("Getting RX Characteristic...");
-        rxCharacteristic = await uartService.getCharacteristic(UART_RX_CHARACTERISTIC_UUID);
-        
-        console.log("Getting TX Characteristic...");
-        txCharacteristic = await uartService.getCharacteristic(UART_TX_CHARACTERISTIC_UUID);
-        await txCharacteristic.startNotifications();
-        txCharacteristic.addEventListener('characteristicvaluechanged', handleIncomingBLEData);
+                console.log("Getting RX Characteristic...");
+                rxCharacteristic = await uartService.getCharacteristic(UART_RX_CHARACTERISTIC_UUID);
+                await new Promise(r => setTimeout(r, 100));
+
+                console.log("Getting TX Characteristic...");
+                txCharacteristic = await uartService.getCharacteristic(UART_TX_CHARACTERISTIC_UUID);
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleIncomingBLEData);
+
+                connected = true;
+                break;
+            } catch (retryError) {
+                console.warn(`Attempt ${attempt} failed:`, retryError.message);
+                if (attempt < 3) {
+                    if (statusEl) statusEl.textContent = `_Retrying (${attempt}/3)..._`;
+                    await new Promise(r => setTimeout(r, 500));
+                    try { bleServer = await bleDevice.gatt.connect(); } catch(e) {}
+                } else {
+                    throw retryError;
+                }
+            }
+        }
 
         console.log("Connected to Beeper successfully!");
         document.getElementById('bleConnectBtn').classList.add("connected");
         document.getElementById('bleConnectBtn').textContent = "_Disconnect_";
         document.getElementById('factoryResetBtn').removeAttribute('disabled');
-        document.getElementById('settingsBtn').removeAttribute('disabled');
-        if (statusEl) statusEl.textContent = "_Loading data..._";
-        await sendBleCommand("GET_CUSTOMS");
-        await sendBleCommand("GET_STATS");
+        document.getElementById('customsBtn').removeAttribute('disabled');
+        if (statusEl) statusEl.textContent = "_Authenticating..._";
+        
+        // Just send a ping command first to see if auth is required
         await sendBleCommand("GET_SETTINGS");
-        
-        if (statusEl) {
-            statusEl.textContent = "_Connected_";
-            statusEl.style.color = "#99ff99";
-        }
-        
-        if (typeof showResultTextIntro === 'function') {
-            showResultTextIntro("Connected.");
-        }
         
         return true;
     } catch (error) {
         console.error("Connection failed!", error);
+        bleDevice = null;
+        bleServer = null;
+        rxCharacteristic = null;
+        txCharacteristic = null;
         if (statusEl) {
             statusEl.textContent = "_Disconnected_";
             statusEl.style.color = "#ff6b6b";
@@ -83,7 +100,6 @@ function onDisconnected() {
     document.getElementById('bleConnectBtn').classList.remove("connected");
     document.getElementById('bleConnectBtn').textContent = "_Pair Device_";
     document.getElementById('factoryResetBtn').setAttribute('disabled', 'true');
-    document.getElementById('settingsBtn').setAttribute('disabled', 'true');
     const statusEl = document.getElementById("deviceStatus");
     if (statusEl) {
         statusEl.textContent = "_Disconnected_";
@@ -111,10 +127,6 @@ function handleIncomingBLEData(event) {
     while (newlineIndex !== -1) {
         let message = incomingBuffer.substring(0, newlineIndex).trim();
         incomingBuffer = incomingBuffer.substring(newlineIndex + 1);
-        isSendingBle = false;
-        if (bleCommandQueue.length > 0) {
-            setTimeout(processBleQueue, 0); 
-        }
         
         if (message.length > 0) {
             parseBleMessage(message);
@@ -126,6 +138,32 @@ function handleIncomingBLEData(event) {
 
 function parseBleMessage(message) {
     console.log("Received from device:", message);
+    
+    if (message === "RES:AUTH_REQUIRED") {
+        document.getElementById("authModal").style.display = "flex";
+        document.getElementById("authPinInput").value = "";
+        document.getElementById("authPinInput").focus();
+        return;
+    } else if (message === "RES:AUTH_OK") {
+        document.getElementById("authModal").style.display = "none";
+        const statusEl = document.getElementById("deviceStatus");
+        if (statusEl) {
+            statusEl.textContent = "_Connected_";
+            statusEl.style.color = "#99ff99";
+        }
+        if (typeof showResultTextIntro === 'function') {
+            showResultTextIntro("Connected.");
+        }
+        sendBleCommand("GET_CUSTOMS");
+        sendBleCommand("GET_STATS");
+        return;
+    } else if (message === "RES:AUTH_FAIL") {
+        document.getElementById("authModal").style.display = "none";
+        alert("Incorrect PIN!");
+        onDisconnected();
+        return;
+    }
+
     if (message === "EVT:PASS") {
         if (typeof triggerPass === 'function') triggerPass(true);
     } else if (message === "EVT:FAIL") {
@@ -138,14 +176,17 @@ function parseBleMessage(message) {
                 let prescript = customPrescripts[idx];
                 let dur = prescript.duration;
                 let text = prescript.text;
+                let respond = prescript.respond !== false;
                 if (typeof scrambleReveal === 'function') {
-                    scrambleReveal(text, 0.1, 0.2, t => display.textContent = t);
+                    scrambleReveal(text, scrambleDuration, revealDuration, t => display.textContent = t);
                 }
                 if (typeof showResultButtons === 'function') {
-                    showResultButtons(dur);
+                    showResultButtons(dur, respond);
                     canResolve = true;
-                    document.getElementById("achievedBtn").disabled = false;
-                    document.getElementById("failedBtn").disabled = false;
+                    if (respond) {
+                        document.getElementById("achievedBtn").disabled = false;
+                        document.getElementById("failedBtn").disabled = false;
+                    }
                 }
             } else {
                 console.warn("Received prescript index out of bounds or customPrescripts not loaded.");
@@ -180,6 +221,17 @@ function parseBleMessage(message) {
         }
     } else if (message.startsWith("RES:SETTINGS|")) {
         try {
+            const statusEl = document.getElementById("deviceStatus");
+            if (statusEl && statusEl.textContent === "_Authenticating..._") {
+                statusEl.textContent = "_Connected_";
+                statusEl.style.color = "#99ff99";
+                if (typeof showResultTextIntro === 'function') {
+                    showResultTextIntro("Connected.");
+                }
+                sendBleCommand("GET_CUSTOMS");
+                sendBleCommand("GET_STATS");
+            }
+            
             let sleepVal = message.split("|MSG:")[1];
             if (typeof updateSettingsUI === 'function') {
                 updateSettingsUI(sleepVal);
@@ -190,14 +242,14 @@ function parseBleMessage(message) {
     }
 }
 
-async function sendBleMessage(text, duration = "10") {
+async function sendBleMessage(text, duration = "10", respond = true) {
     if (!rxCharacteristic) {
         console.log("Cannot send message. BLE device not connected.");
         return;
     }
 
     try {
-        const fullMessage = `CMD:SHOW|DUR:${duration}|MSG:${text}\n`;
+        const fullMessage = `CMD:SHOW|DUR:${duration}|RES:${respond ? 1 : 0}|MSG:${text}\n`;
         
         let encoder = new TextEncoder('utf-8');
         let messageArray = encoder.encode(fullMessage);
@@ -236,10 +288,28 @@ async function sendBleCommand(cmd, msg = "") {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const connectBtn = document.getElementById('bleConnectBtn');
+document.addEventListener('DOMContentLoaded', () => {
+    let connectBtn = document.getElementById('bleConnectBtn');
     if (connectBtn) {
         connectBtn.addEventListener('click', connectToBeeper);
+    }
+
+    let authSubmitBtn = document.getElementById('authSubmitBtn');
+    let authPinInput = document.getElementById('authPinInput');
+    if (authSubmitBtn) {
+        authSubmitBtn.addEventListener('click', () => {
+            let pin = authPinInput.value;
+            if (pin.length > 0) {
+                sendBleCommand("AUTH", pin);
+            }
+        });
+    }
+    if (authPinInput) {
+        authPinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && authPinInput.value.length > 0) {
+                sendBleCommand("AUTH", authPinInput.value);
+            }
+        });
     }
 
     const resetBtn = document.getElementById('factoryResetBtn');
