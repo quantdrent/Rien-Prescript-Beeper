@@ -5,7 +5,8 @@
 This works similar to [this project](https://github.com/quantdrent/ESP32-Prescript-Beeper) with many qol.
 > If you want to use a esp32 then follow that guide instead (you will be able to use the same website for sending stuff but smaller device)
 
-this runs on web ble instead of the old wifi html version, i used a nrf52840 because i had these lying around and maybe someday ill remake this to support a esp32 c3/s3
+this runs on web ble instead of the old wifi html version, i used a nrf52840 because i had these lying around, CHECK [this project](https://github.com/quantdrent/ESP32-Prescript-Beeper) FOR ESP32 PORT (note this uses a 1.3 Inch oled screen)
+
 if you are unable to obtain a 2.25 inch tft screen you need to change the library and the object name, you also need to tweak the case in tinkercad or ask help to @quantdrent on tiktok and discord
 
 **You need to use a browser that supports web ble**

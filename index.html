@@ -49,8 +49,10 @@
     </div>
     <div id="customsModal" class="modal">
         <div class="modal-content">
-            <span id="closeCustoms">&times;</span>
-            <h2>Prescript Storage</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Prescript Storage</h2>
+                <span id="closeCustoms" style="margin-top: -5px;">&times;</span>
+            </div>
             <div id="customsList">No custom prescripts loaded. Connect device first.</div>
             <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
                 <div style="display: flex; gap: 8px; align-items: center;">
@@ -78,8 +80,10 @@
 
     <div id="syncModal" class="modal">
         <div class="modal-content" style="text-align: center;">
-            <span id="closeSync">&times;</span>
-            <h2>Sync Prescripts</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Sync Prescripts</h2>
+                <span id="closeSync" style="margin-top: -5px;">&times;</span>
+            </div>
             <p class="sync-modal-desc">You have offline prescripts saved. How would you like to sync them with the device?</p>
             <div class="sync-modal-actions">
                 <button id="btnDeviceOverride" class="sync-btn sync-btn--override">DEVICE OVERRIDE<br><span>Wipe offline edits and load device data.</span></button>
@@ -90,13 +94,15 @@
 
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <span id="closeSettings">&times;</span>
-            <h2>Settings</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Settings</h2>
+                <span id="closeSettings" style="margin-top: -5px;">&times;</span>
+            </div>
             <div class="modal-body">
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     Global Text Scale:
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" id="textScaleInput" value="2" min="1" max="10">
+                        <input type="number" id="textScaleInput" value="1" min="1" max="10">
                         <img src="img/refresh.svg" id="resetTextScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
@@ -135,7 +141,7 @@
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     Scramble Frames:
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" id="scrambleFramesInput" value="30" min="1" max="500">
+                        <input type="number" id="scrambleFramesInput" value="20" min="5" max="120">
                         <img src="img/refresh.svg" id="resetScrambleFrames" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
@@ -144,7 +150,7 @@
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     Scramble Speed (ms):
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" id="scrambleDelayInput" value="5" min="1" max="100">
+                        <input type="number" id="scrambleDelayInput" value="20" min="1" max="100">
                         <img src="img/refresh.svg" id="resetScrambleDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
@@ -153,13 +159,21 @@
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     Reveal Speed (ms):
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" id="revealDelayInput" value="15" min="1" max="100">
+                        <input type="number" id="revealDelayInput" value="20" min="1" max="100">
                         <img src="img/refresh.svg" id="resetRevealDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Delay per letter when revealing (lower = faster).</p>
                 
                 <hr style="border: 1px solid #333; margin: 15px 0;">
+                
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="fontToggle" style="transform: scale(1.2); cursor: pointer;">
+                        Use Proportional Font (Device Only):
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Use a variable-spacing font instead of the classic Monospace font on the physical device.</p>
                 
                 <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -186,7 +200,10 @@
                 <p style="margin-bottom: 15px; color: #99edff; font-size: 0.9em;">Enter the 6-digit PIN displayed on the Beeper.</p>
                 <input type="text" id="authPinInput" maxlength="6" inputmode="numeric" style="width: 100%; text-align: center; font-size: 1.5em; letter-spacing: 5px; margin-bottom: 15px;" placeholder="------">
             </div>
-            <button id="authSubmitBtn" style="width: 100%; padding: 10px; background: #99edff; color: #000; font-weight: bold; font-family: 'code', monospace;">Unlock</button>
+            <div style="display: flex; gap: 8px;">
+                <button id="authResendBtn" style="flex: 1; padding: 10px; background: transparent; border: 1px solid #99edff; color: #99edff; font-family: 'code', monospace; font-weight: bold;">Resend</button>
+                <button id="authSubmitBtn" style="flex: 2; padding: 10px; background: #99edff; border: 1px solid #99edff; color: #000; font-weight: bold; font-family: 'code', monospace;">Unlock</button>
+            </div>
         </div>
     </div>
 

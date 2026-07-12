@@ -65,12 +65,25 @@ void onConnect(uint16_t conn_handle) {
 void onDisconnect(uint16_t conn_handle, uint8_t reason) {
   (void) conn_handle;
   (void) reason;
-  isDisplaying = false;
-  isInfinite = false;
+  if (isAuthenticated) {
+    snprintf(pendingDisplayText, sizeof(pendingDisplayText), "Disconnected.");
+    pendingDisplayUpdate = true;
+  } else {
+    isDisplaying = false;
+    isInfinite = false;
+  }
 }
 
 void parseCommand(String message) {
   if (bleRequirePin && !isAuthenticated) {
+    if (message == "CMD:AUTH_RESEND") {
+      long pinVal = random(100000, 999999);
+      snprintf(currentSessionPinBuf, sizeof(currentSessionPinBuf), "%ld", pinVal);
+      snprintf(pendingDisplayText, sizeof(pendingDisplayText), "PIN: %ld", pinVal);
+      pendingDisplayUpdate = true;
+      bleuart.print("RES:AUTH_RESENT\n");
+      return;
+    }
     if (message.startsWith("CMD:AUTH|MSG:")) {
       String pin = message.substring(13);
       pin.trim();
@@ -97,7 +110,7 @@ void parseCommand(String message) {
   else if (message == "CMD:NEXT") {
     simulatePass = false;
     simulateFail = false;
-    
+
     int idx = -1;
     String line = getRandomPrescript(&idx);
     if (line.length() > 0) {
@@ -132,12 +145,12 @@ void parseCommand(String message) {
 
     if (durIndex != -1 && msgIndex != -1) {
       String durStr = message.substring(durIndex + 4, (resIndex != -1) ? resIndex - 1 : msgIndex - 1);
-      
+
       bool respond = true;
       if (resIndex != -1) {
           respond = (message.substring(resIndex + 4, msgIndex - 1) != "0");
       }
-      
+
       String msgText = message.substring(msgIndex + 4);
 
       bool inf = (durStr == "INF");
@@ -191,26 +204,32 @@ void parseCommand(String message) {
       int c4 = data.indexOf(',', c3 + 1);
       int c5 = data.indexOf(',', c4 + 1);
       int c6 = data.indexOf(',', c5 + 1);
-      
+      int c7 = data.indexOf(',', c6 + 1);
+
       if (c1 != -1 && c2 != -1 && c3 != -1) {
         textScale = data.substring(0, c1).toInt();
         scrambleDurationFrames = data.substring(c1 + 1, c2).toInt();
         scrambleDelayMs = data.substring(c2 + 1, c3).toInt();
-        
+
         if (c4 != -1 && c5 != -1) {
           revealDelayMs = data.substring(c3 + 1, c4).toInt();
           timerPosition = data.substring(c4 + 1, c5).toInt();
-          
+
           if (c6 != -1) {
             timerScale = data.substring(c5 + 1, c6).toFloat();
-            bleRequirePin = data.substring(c6 + 1).toInt() != 0;
+            if (c7 != -1) {
+              bleRequirePin = data.substring(c6 + 1, c7).toInt() != 0;
+              useProportionalFont = data.substring(c7 + 1).toInt() != 0;
+            } else {
+              bleRequirePin = data.substring(c6 + 1).toInt() != 0;
+            }
           } else {
             timerScale = data.substring(c5 + 1).toFloat();
           }
         } else {
           revealDelayMs = data.substring(c3 + 1).toInt();
         }
-        
+
         writeSettings();
       } else {
         textScale = data.toInt();
@@ -241,10 +260,9 @@ void bleInit() {
   Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
   Bluefruit.begin();
 
-  // Bust Windows GATT Cache by spoofing a slightly different MAC address
   ble_gap_addr_t addr;
   sd_ble_gap_addr_get(&addr);
-  addr.addr[0] += 1; // Bump the MAC address by 1
+  addr.addr[0] += 1;
   sd_ble_gap_addr_set(&addr);
 
   Bluefruit.setTxPower(4);

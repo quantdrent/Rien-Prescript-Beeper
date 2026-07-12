@@ -22,6 +22,7 @@ int scrambleDelayMs = DEFAULT_SCRAMBLE_DELAY;
 int revealDelayMs = DEFAULT_REVEAL_DELAY;
 int timerPosition = 0;
 float timerScale = 1.0;
+bool useProportionalFont = false;
 
 int cachedTotalPrescripts = -1;
 
@@ -39,25 +40,31 @@ void readSettings() {
       int c1 = content.indexOf(',');
       int c2 = content.indexOf(',', c1 + 1);
       int c3 = content.indexOf(',', c2 + 1);
-      
+
       int c4 = content.indexOf(',', c3 + 1);
       int c5 = content.indexOf(',', c4 + 1);
       int c6 = content.indexOf(',', c5 + 1);
-      
+      int c7 = content.indexOf(',', c6 + 1);
+
       if (c1 == -1) {
         textScale = content.toInt();
       } else {
         textScale = content.substring(0, c1).toInt();
         scrambleDurationFrames = content.substring(c1 + 1, c2 == -1 ? content.length() : c2).toInt();
         if (c2 != -1) scrambleDelayMs = content.substring(c2 + 1, c3 == -1 ? content.length() : c3).toInt();
-        
+
         if (c4 != -1 && c5 != -1) {
           revealDelayMs = content.substring(c3 + 1, c4).toInt();
           timerPosition = content.substring(c4 + 1, c5).toInt();
-          
+
           if (c6 != -1) {
             timerScale = content.substring(c5 + 1, c6).toFloat();
-            bleRequirePin = content.substring(c6 + 1).toInt() != 0;
+            if (c7 != -1) {
+              bleRequirePin = content.substring(c6 + 1, c7).toInt() != 0;
+              useProportionalFont = content.substring(c7 + 1).toInt() != 0;
+            } else {
+              bleRequirePin = content.substring(c6 + 1).toInt() != 0;
+            }
           } else {
             timerScale = content.substring(c5 + 1).toFloat();
           }
@@ -73,7 +80,7 @@ void writeSettings() {
   InternalFS.remove(SETTINGS_FILE);
   File f(SETTINGS_FILE, FILE_O_WRITE, InternalFS);
   if (f) {
-    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0));
+    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0));
     f.close();
   }
 }
@@ -85,7 +92,7 @@ void clearCustoms() {
 
 void sendSettings() {
   if (!bleNotifyReady()) return;
-  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "\n";
+  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "\n";
   sendChunked(msg.c_str(), msg.length());
 }
 
@@ -226,7 +233,7 @@ int countStoredPrescripts() {
   int count = 0;
   bool hasChars = false;
   char readBuf[128];
-  
+
   while (f.available()) {
     int bytesRead = f.read(readBuf, sizeof(readBuf));
     for (int i = 0; i < bytesRead; i++) {
@@ -240,7 +247,7 @@ int countStoredPrescripts() {
     }
   }
   if (hasChars) count++;
-  
+
   f.close();
   cachedTotalPrescripts = count;
   return count;
@@ -256,7 +263,7 @@ String getPrescriptByIndex(int target) {
   int pos = 0;
   bool hasChars = false;
   char readBuf[128];
-  
+
   while (f.available()) {
     int bytesRead = f.read(readBuf, sizeof(readBuf));
     for (int i = 0; i < bytesRead; i++) {
@@ -280,13 +287,13 @@ String getPrescriptByIndex(int target) {
       }
     }
   }
-  
+
   if (hasChars && result.length() == 0 && current == target) {
     buf[pos] = '\0';
     result = String(buf);
     result.trim();
   }
-  
+
   f.close();
   return result;
 }
@@ -312,7 +319,7 @@ bool parsePrescriptLine(const String& line, int& outDuration, bool& outRespond, 
     outText = line;
     return true;
   }
-  
+
   int sep2 = line.indexOf('|', sep1 + 1);
   if (sep2 != -1 && sep2 - sep1 <= 2) {
     outDuration = line.substring(0, sep1).toInt();
@@ -323,7 +330,7 @@ bool parsePrescriptLine(const String& line, int& outDuration, bool& outRespond, 
     outRespond = true;
     outText = line.substring(sep1 + 1);
   }
-  
+
   if (outDuration <= 0) outDuration = 10;
   return outText.length() > 0;
 }

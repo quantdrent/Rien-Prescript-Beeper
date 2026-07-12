@@ -34,7 +34,6 @@ async function connectToBeeper() {
         if (statusEl) statusEl.textContent = "_Connecting..._";
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-        // Retry GATT connection up to 3 times with delays
         let connected = false;
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
@@ -75,10 +74,9 @@ async function connectToBeeper() {
         document.getElementById('factoryResetBtn').removeAttribute('disabled');
         document.getElementById('customsBtn').removeAttribute('disabled');
         if (statusEl) statusEl.textContent = "_Authenticating..._";
-        
-        // Just send a ping command first to see if auth is required
+
         await sendBleCommand("GET_SETTINGS");
-        
+
         return true;
     } catch (error) {
         console.error("Connection failed!", error);
@@ -105,12 +103,12 @@ function onDisconnected() {
         statusEl.textContent = "_Disconnected_";
         statusEl.style.color = "#ff6b6b";
     }
-    
+
     achieved = 0;
     failed = 0;
     total = 0;
     if (typeof updateCounters === 'function') updateCounters();
-    
+
     bleDevice = null;
     bleServer = null;
     uartService = null;
@@ -127,18 +125,18 @@ function handleIncomingBLEData(event) {
     while (newlineIndex !== -1) {
         let message = incomingBuffer.substring(0, newlineIndex).trim();
         incomingBuffer = incomingBuffer.substring(newlineIndex + 1);
-        
+
         if (message.length > 0) {
             parseBleMessage(message);
         }
-        
+
         newlineIndex = incomingBuffer.indexOf('\n');
     }
 }
 
 function parseBleMessage(message) {
     console.log("Received from device:", message);
-    
+
     if (message === "RES:AUTH_REQUIRED") {
         document.getElementById("authModal").style.display = "flex";
         document.getElementById("authPinInput").value = "";
@@ -154,6 +152,7 @@ function parseBleMessage(message) {
         if (typeof showResultTextIntro === 'function') {
             showResultTextIntro("Connected.");
         }
+        sendBleCommand("GET_SETTINGS");
         sendBleCommand("GET_CUSTOMS");
         sendBleCommand("GET_STATS");
         return;
@@ -212,7 +211,7 @@ function parseBleMessage(message) {
                     achieved = parseInt(parts[0]);
                     failed = parseInt(parts[1]);
                     total = parseInt(parts[2]);
-                    
+
                     if (typeof updateCounters === 'function') updateCounters();
                 }
             }
@@ -231,7 +230,7 @@ function parseBleMessage(message) {
                 sendBleCommand("GET_CUSTOMS");
                 sendBleCommand("GET_STATS");
             }
-            
+
             let sleepVal = message.split("|MSG:")[1];
             if (typeof updateSettingsUI === 'function') {
                 updateSettingsUI(sleepVal);
@@ -250,7 +249,7 @@ async function sendBleMessage(text, duration = "10", respond = true) {
 
     try {
         const fullMessage = `CMD:SHOW|DUR:${duration}|RES:${respond ? 1 : 0}|MSG:${text}\n`;
-        
+
         let encoder = new TextEncoder('utf-8');
         let messageArray = encoder.encode(fullMessage);
 
@@ -258,7 +257,7 @@ async function sendBleMessage(text, duration = "10", respond = true) {
         for (let i = 0; i < messageArray.length; i += CHUNK_SIZE) {
             let chunk = messageArray.slice(i, i + CHUNK_SIZE);
             await rxCharacteristic.writeValue(chunk);
-            await new Promise(r => setTimeout(r, 10)); 
+            await new Promise(r => setTimeout(r, 10));
         }
 
         console.log("Message sent to Beeper: " + fullMessage.trim());
@@ -273,7 +272,7 @@ async function sendBleCommand(cmd, msg = "") {
         let fullMessage = `CMD:${cmd}`;
         if (msg) fullMessage += `|MSG:${msg}`;
         fullMessage += "\n";
-        
+
         let encoder = new TextEncoder('utf-8');
         let messageArray = encoder.encode(fullMessage);
 
@@ -281,7 +280,7 @@ async function sendBleCommand(cmd, msg = "") {
         for (let i = 0; i < messageArray.length; i += CHUNK_SIZE) {
             let chunk = messageArray.slice(i, i + CHUNK_SIZE);
             await rxCharacteristic.writeValue(chunk);
-            await new Promise(r => setTimeout(r, 10)); 
+            await new Promise(r => setTimeout(r, 10));
         }
     } catch (error) {
         console.error("Failed to send command", error);
@@ -295,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let authSubmitBtn = document.getElementById('authSubmitBtn');
+    let authResendBtn = document.getElementById('authResendBtn');
     let authPinInput = document.getElementById('authPinInput');
     if (authSubmitBtn) {
         authSubmitBtn.addEventListener('click', () => {
@@ -302,6 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pin.length > 0) {
                 sendBleCommand("AUTH", pin);
             }
+        });
+    }
+    if (authResendBtn) {
+        authResendBtn.addEventListener('click', () => {
+            sendBleCommand("AUTH_RESEND");
+            authPinInput.value = "";
+            authPinInput.focus();
         });
     }
     if (authPinInput) {

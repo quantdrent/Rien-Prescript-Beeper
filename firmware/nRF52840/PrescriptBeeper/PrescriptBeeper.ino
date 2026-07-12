@@ -21,31 +21,31 @@ void enterSleep() {
   currentDisplayText = "";
   displayIdle();
   tft.fillScreen(COLOR_BG);
-  
+
   Serial.println("STOPPING BLE");
   Bluefruit.Advertising.stop();
   if (Bluefruit.connected()) {
     Bluefruit.disconnect(Bluefruit.connHandle());
   }
   delay(200);
-  
+
   Serial.println("KILLING VCC");
   digitalWrite(EXT_VCC, LOW);
   delay(100);
-  
+
   Serial.println("WAITING FOR BUTTON RELEASE");
   while(digitalRead(BUTTON_POWER_PIN) == LOW) {
     delay(10);
   }
   delay(300);
-  
+
   Serial.println("SLEEP STEP 5: CONFIGURING WAKEUP PIN");
   nrf_gpio_cfg_sense_input(g_ADigitalPinMap[BUTTON_POWER_PIN], NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
-  
+
   Serial.println("ENTERING SYSTEM OFF");
   Serial.flush();
   delay(100);
-  
+
   sd_power_system_off();
   while(1) {
     __WFE();
@@ -65,13 +65,13 @@ void setup() {
   pinMode(BUTTON_PASS_PIN, INPUT_PULLUP);
   pinMode(BUTTON_FAIL_PIN, INPUT_PULLUP);
   pinMode(BUTTON_POWER_PIN, INPUT_PULLUP);
-  
+
   pinMode(EXT_VCC, OUTPUT);
   digitalWrite(EXT_VCC, HIGH);
 
   InternalFS.begin();
   readSettings();
-  
+
   displayInit();
   displayIdle();
 
@@ -99,7 +99,7 @@ void loop() {
   NRF_WDT->RR[0] = WDT_RR_RR_Reload;
   handleButtons();
   handleBLE();
-  updateScramble();
+  handleDisplayScramble();
   handleDisplayTimer();
   if (pendingDisplayUpdate) {
     pendingDisplayUpdate = false;
@@ -127,7 +127,7 @@ void loop() {
   if (!displayScrambling) {
     flushStatsIfNeeded();
   }
-  
+
   yield();
 }
 
@@ -181,7 +181,7 @@ void handleButtons() {
     if (passReading == HIGH) passHandled = false;
   }
   bool passTriggered = (!passHandled && passReading == LOW && (millis() - lastDebounceTimePass) > DEBOUNCE_DELAY);
-  
+
   if (passTriggered || simulatePass) {
     bool fromWeb = simulatePass;
     simulatePass = false;
@@ -203,9 +203,7 @@ void handleButtons() {
           }
         }
       } else {
-        displayStatus("NO DATA");
-        delay(1000);
-        displayIdle();
+        showPrescriptOnDisplay("NO DATA", 1000, false, false);
       }
     } else {
       if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
@@ -229,7 +227,7 @@ void handleButtons() {
     simulateFail = false;
     bool wasTimeout = timerTimeoutFail;
     timerTimeoutFail = false;
-    
+
     if (failTriggered) failHandled = true;
 
     if (isDisplaying || fromWeb || wasTimeout) {
@@ -248,7 +246,7 @@ void handleButtons() {
   if (powerReading != lastPowerState) {
     lastDebounceTimePower = millis();
   }
-  
+
   if ((millis() - lastDebounceTimePower) > DEBOUNCE_DELAY) {
     if (powerReading == LOW) {
       if (powerPressedTime == 0) {

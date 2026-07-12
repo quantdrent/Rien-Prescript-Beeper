@@ -10,14 +10,15 @@ extern int revealDelayMs;
 extern int timerPosition;
 extern float timerScale;
 extern bool bleRequirePin;
+extern bool useProportionalFont;
 
-#define TFT_CS    D5
-#define TFT_DC    D6
-#define TFT_RST   D7
-#define TFT_SCLK  D8
-#define TFT_MOSI  D9
-#define TFT_WIDTH  284
-#define TFT_HEIGHT 76
+#define TFT_WIDTH   284
+#define TFT_HEIGHT  76
+#define TFT_CS      D5
+#define TFT_DC      D6
+#define TFT_RST     D7
+#define TFT_MOSI    D9
+#define TFT_SCLK    D8
 
 #define BUTTON_PASS_PIN  D2
 #define BUTTON_FAIL_PIN  D3
@@ -33,11 +34,10 @@ extern bool bleRequirePin;
 #define STATS_FILE      "stats.txt"
 #define SETTINGS_FILE   "settings.txt"
 
-// default setttings
-#define DEFAULT_TEXT_SCALE          2
-#define DEFAULT_SCRAMBLE_FRAMES     30
-#define DEFAULT_SCRAMBLE_DELAY      5
-#define DEFAULT_REVEAL_DELAY        15
+#define DEFAULT_TEXT_SCALE          1
+#define DEFAULT_SCRAMBLE_FRAMES     20
+#define DEFAULT_SCRAMBLE_DELAY      20
+#define DEFAULT_REVEAL_DELAY        20
 
 #define COLOR_BG    0x0000
 #define COLOR_TEXT  0xBF5F

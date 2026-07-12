@@ -6,7 +6,6 @@ function updateCounters() {
     totalSpan.textContent = `PRESCRIPTS: ${total}`;
 }
 
-
 function showPlayButton() {
     buttonContainer.innerHTML = `<button id="startBtn">Next</button>`;
     document.getElementById("startBtn").addEventListener("click", handlePlayClick);
@@ -25,13 +24,13 @@ async function triggerPass(fromDevice = false) {
     if (!canResolve) return;
     canResolve = false;
     if (currentTimer) clearInterval(currentTimer);
-    
+
     showResultText("CLEAR.");
     showPlayButton();
     if (typeof sendBleCommand === 'function' && fromDevice !== true) {
         await sendBleCommand("PASS");
     }
-    
+
     if (fromDevice !== true) {
         achieved++;
         updateCounters();
@@ -42,13 +41,13 @@ async function triggerFail(fromDevice = false) {
     if (!canResolve) return;
     canResolve = false;
     if (currentTimer) clearInterval(currentTimer);
-    
+
     showResultText("FAILED.");
     showPlayButton();
     if (typeof sendBleCommand === 'function' && fromDevice !== true) {
         await sendBleCommand("FAIL");
     }
-    
+
     if (fromDevice !== true) {
         failed++;
         updateCounters();
@@ -62,13 +61,13 @@ function formatTime(totalSeconds) {
     const s = totalSeconds % 60;
     let parts = [];
     if (h > 0) parts.push(`${h}h`);
-    if (m > 0 || (h > 0 && s > 0)) parts.push(`${m}m`); // keep '0m' if hours exist and seconds exist? Or just omit if 0? "4h 20s" is fine. User asked "if has hours tthen 4h 3m 20s". Let's just omit 0 values.
+    if (m > 0 || (h > 0 && s > 0)) parts.push(`${m}m`);
     if (s > 0) parts.push(`${s}s`);
     return parts.join(" ");
 }
 
 function showResultButtons(duration, respond = true) {
-    canResolve = false; 
+    canResolve = false;
 
     let timeLeft = duration || 10;
 
@@ -87,10 +86,10 @@ function showResultButtons(duration, respond = true) {
     }
 
     if (currentTimer) clearInterval(currentTimer);
-    
+
     currentTimer = setInterval(() => {
         if (!canResolve) return;
-        
+
         if (timeLeft > 0) {
             timeLeft--;
             const timerEl = document.getElementById("timerDisplay");
@@ -114,37 +113,37 @@ async function handlePlayClick() {
     let text = "NO DATA";
     let respond = true;
     let idx = -1;
-    
+
     if (typeof pickMessage === 'function') {
         let picked = pickMessage();
         if (picked) {
             dur = picked.duration || 10;
             text = picked.text;
             respond = picked.respond !== false;
-            
+
             if (typeof customPrescripts !== 'undefined') {
                 idx = customPrescripts.findIndex(p => p.text === text && p.duration === dur);
             }
         }
     }
-    
+
     if (typeof txCharacteristic !== 'undefined' && txCharacteristic && idx !== -1) {
         sendBleCommand("SHOW_IDX:" + idx);
     }
-    
+
     if (typeof scrambleReveal === 'function') {
         scrambleReveal(text, scrambleDuration, revealDuration, t => display.textContent = t);
     } else {
         display.textContent = text;
     }
-    
+
     showResultButtons(dur, respond);
     canResolve = true;
     if (respond) {
         document.getElementById("achievedBtn").disabled = false;
         document.getElementById("failedBtn").disabled = false;
     }
-    
+
     total++;
     updateCounters();
 }
@@ -153,20 +152,20 @@ function triggerManualPrescript(text, duration = 10, respond = true) {
     if (typeof sendBleMessage === 'function') {
         sendBleMessage(text, duration, respond);
     }
-    
+
     if (typeof scrambleReveal === 'function') {
         scrambleReveal(text, scrambleDuration, revealDuration, t => display.textContent = t);
     } else {
         display.textContent = text;
     }
-    
+
     showResultButtons(duration, respond);
     canResolve = true;
     if (respond) {
         document.getElementById("achievedBtn").disabled = false;
         document.getElementById("failedBtn").disabled = false;
     }
-    
+
     total++;
     updateCounters();
 }

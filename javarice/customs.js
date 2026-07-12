@@ -156,7 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Export prescripts to .txt
     const exportBtn = document.getElementById("exportPrescriptsBtn");
     if (exportBtn) {
         exportBtn.addEventListener("click", () => {
@@ -175,7 +174,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Import prescripts from .txt
     const importBtn = document.getElementById("importPrescriptsBtn");
     const importFile = document.getElementById("importFileInput");
     if (importBtn && importFile) {
@@ -211,7 +209,6 @@ function handleDeviceCustomsSync(deviceCustomStrings) {
         localCustoms = (typeof saved[0] === 'string') ? saved.map(stringToPrescript) : saved;
     }
 
-    // Normalize both sides to the same string format before comparing
     const normalizeList = (list) => list.map(p => prescriptToString({
         duration: p.duration || 10,
         respond: p.respond !== false,
@@ -296,7 +293,7 @@ function renderCustomsList() {
         resLabel.style.color = "#aaa";
         resLabel.style.cursor = "pointer";
         resLabel.textContent = " Res:";
-        
+
         const resInputEl = document.createElement("input");
         resInputEl.type = "checkbox";
         resInputEl.checked = prescript.respond !== false;
