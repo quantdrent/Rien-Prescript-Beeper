@@ -15,7 +15,7 @@ if you are unable to obtain a 2.25 inch tft screen you need to change the librar
 https://quantdrent.github.io/Rien-Prescript-Beeper
 
 ## Required Materials
-* SuperMini nRF52840 [[AliExpress](https://www.aliexpress.com/item/1005006019812115.html)] (a supermini esp32 should work too)
+* SuperMini nRF52840 [[AliExpress](https://www.aliexpress.com/item/1005006019812115.html)]
 * 2.25 Inch TFT LCD Module 76x284, ST7789 [[AliExpress](https://www.aliexpress.com/item/1005011855033572.html)]
 * 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
 * Wires (use ur prefered wire type, i used awg 24)
@@ -24,8 +24,8 @@ https://quantdrent.github.io/Rien-Prescript-Beeper
 You also need access to a 3d printer to print the case check models folder.
 
 ## Instructions
-> Look up "how to setup (boardname) Arduino IDE" before proceeding, for nrf52840 check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones
-> For nr52840 dont forget to solder boost (two pads) if ur batt is more than 500
+> check this out https://www.beachyuk.com/blog/connecting-and-testing-promicro-nrf52840-clones to setup
+> dont forget to solder boost (two pads) if ur batt is more than 500
 1. Download the firmware in released and pick your microcontroller or click code then Download Zip to get offline version of the site aswell as the firmwares
 2. Open the firmware folder, open the nrf52840 and open the .ino
 3. Solder Everything based on your .config 
