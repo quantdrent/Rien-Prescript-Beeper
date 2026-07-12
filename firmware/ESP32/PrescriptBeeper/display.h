@@ -1,16 +1,10 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include <SPI.h>
+#include <Wire.h>
 #include <Adafruit_GFX.h>
-#include "ST7789_nRF52840.h"
+#include <Adafruit_SH110X.h>
 #include "config.h"
-
-#include "PixelifySans_Regular9pt7b.h"
-#include "PixelifySans_Regular12pt7b.h"
-#include "PixelifySans_Regular20pt7b.h"
-
-void drawSprite();
 
 extern int timerPosition;
 extern float timerScale;
@@ -19,8 +13,7 @@ extern bool isInfinite;
 extern unsigned long displayDurationMs;
 extern bool useProportionalFont;
 
-ST7789_nRF tft(TFT_CS, TFT_DC, TFT_RST);
-GFXcanvas16 spr(TFT_WIDTH, TFT_HEIGHT);
+Adafruit_SH1106G oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 extern int scrambleDurationFrames;
 extern int scrambleDelayMs;
@@ -29,26 +22,13 @@ extern int revealDelayMs;
 static const char SCRAMBLE_CHARS[] = "ABCDEF@HIJ_LM%OPQR^WX#YZa#b+cdefgh*iqrxyz0123456789";
 static const int NUM_SCRAMBLE_CHARS = sizeof(SCRAMBLE_CHARS) - 1;
 
-void displayInit() {
-  SPI.setPins(-1, TFT_SCLK, TFT_MOSI);
-  tft.begin();
-  tft.setRotation(1);
-  tft.fillScreen(COLOR_BG);
-}
-
-void displayClear() {
-  tft.fillScreen(COLOR_BG);
-}
-
-static char finalLines[6][128];
-static char workLines[6][128];
-static int g_lineCount, g_startY, g_charH, g_startX;
-static int g_textSz = 1;
+static char finalLines[6][64];
+static char workLines[6][64];
+static int g_lineCount, g_startY, g_charH;
 
 static char timerFinalStr[32];
 static char timerWorkStr[32];
 static int g_timerY = 0;
-static int g_timerSz = 1;
 
 static bool displayScrambling = false;
 static unsigned long displayScrambleStartTime = 0;
@@ -59,96 +39,37 @@ static int displayRevealChar = 0;
 static int displayScrambleFrames = 0;
 unsigned long displayFinishedTime = 0;
 
-void setupFont(int sz) {
-  if (sz <= 0) {
-    spr.setFont(NULL);
-    spr.setTextSize(1);
-  } else if (sz == 1) {
-    spr.setFont(&PixelifySans_Regular9pt7b);
-    spr.setTextSize(1);
-  } else if (sz <= 3) {
-    spr.setFont(&PixelifySans_Regular12pt7b);
-    spr.setTextSize(1);
-  } else {
-    spr.setFont(&PixelifySans_Regular20pt7b);
-    spr.setTextSize(sz - 2);
+void drawOledBuffer();
+
+void displayInit() {
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  if (!oled.begin(0x3C, true)) {
+    Serial.println("OLED FAILED");
   }
+  oled.setRotation(2); // Based on original IndexProxy
+  oled.clearDisplay();
+  oled.display();
 }
 
-int getFontHeight() {
-  int16_t x1, y1;
-  uint16_t w, h;
-  spr.getTextBounds("Ay|", 0, 0, &x1, &y1, &w, &h);
-  return h;
+void displayClear() {
+  oled.clearDisplay();
+  oled.display();
 }
 
 int getTextWidth(const char* text) {
   int16_t x1, y1;
   uint16_t w, h;
-  spr.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  oled.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
   return w;
 }
 
-int buildLayout(const char* text, char linesBuf[][128], int* lineCount, int* outStartY, int* outCharH) {
-  int sz = textScale;
+int buildLayout(const char* text, char linesBuf[][64], int* lineCount, int* outStartY, int* outCharH) {
+  oled.setTextSize(textScale > 0 ? textScale : 1);
+  int charH = 8 * (textScale > 0 ? textScale : 1); // standard font height
+  int maxW = SCREEN_WIDTH - 4;
+  int maxH = SCREEN_HEIGHT;
 
-  int maxW = TFT_WIDTH * 0.90;
-  int maxH = TFT_HEIGHT * 0.90;
-
-  while (sz >= 0) {
-    setupFont(sz);
-    int charH = getFontHeight();
-
-    int lines = 1;
-    char lineStr[128];
-    memset(lineStr, 0, sizeof(lineStr));
-    int lineLen = 0;
-    const char* p = text;
-
-    while (*p) {
-      if (*p == ' ') {
-        const char* q = p + 1;
-        int wl = 0;
-        char wordBuf[32];
-        memset(wordBuf, 0, sizeof(wordBuf));
-        while (*q && *q != ' ' && wl < 31) { wordBuf[wl++] = *q++; }
-
-        char testBuf[128];
-        if (lineLen == 0) snprintf(testBuf, sizeof(testBuf), "%s", wordBuf);
-        else snprintf(testBuf, sizeof(testBuf), "%s %s", lineStr, wordBuf);
-
-        if (getTextWidth(testBuf) > maxW && lineLen > 0) {
-          lines++;
-          memset(lineStr, 0, sizeof(lineStr));
-          lineLen = 0;
-          p++;
-          continue;
-        }
-      }
-
-      lineStr[lineLen] = *p;
-      lineStr[lineLen + 1] = '\0';
-
-      if (getTextWidth(lineStr) > maxW && lineLen > 0) {
-
-        lines++;
-        lineStr[0] = *p;
-        lineStr[1] = '\0';
-        lineLen = 1;
-      } else {
-        lineLen++;
-      }
-      p++;
-    }
-    if (lines * charH <= maxH) break;
-    sz--;
-  }
-  if (sz < 0) sz = 0;
-
-  setupFont(sz);
-  int charH = getFontHeight();
-
-  for (int i = 0; i < 6; i++) memset(linesBuf[i], 0, 128);
+  for (int i = 0; i < 6; i++) memset(linesBuf[i], 0, 64);
 
   int li = 0;
   int charIdx = 0;
@@ -162,7 +83,7 @@ int buildLayout(const char* text, char linesBuf[][128], int* lineCount, int* out
       memset(wordBuf, 0, sizeof(wordBuf));
       while (*q && *q != ' ' && wl < 31) { wordBuf[wl++] = *q++; }
 
-      char testBuf[128];
+      char testBuf[64];
       if (charIdx == 0) snprintf(testBuf, sizeof(testBuf), "%s", wordBuf);
       else snprintf(testBuf, sizeof(testBuf), "%s %s", linesBuf[li], wordBuf);
 
@@ -192,7 +113,7 @@ int buildLayout(const char* text, char linesBuf[][128], int* lineCount, int* out
 
   *lineCount = li + 1;
   *outCharH = charH;
-  return sz;
+  return textScale > 0 ? textScale : 1;
 }
 
 void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
@@ -225,22 +146,13 @@ void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
   }
   strcpy(timerWorkStr, timerFinalStr);
 
-  g_timerSz = (int)(textScale * timerScale);
-  if (g_timerSz < 1) g_timerSz = 1;
-
-  setupFont(g_timerSz);
   int16_t x1, y1;
   uint16_t w, h;
-  spr.getTextBounds(timerFinalStr, 0, 0, &x1, &y1, &w, &h);
+  oled.setTextSize(1);
+  oled.getTextBounds(timerFinalStr, 0, 0, &x1, &y1, &w, &h);
 
-  while (g_timerSz > 1 && w > (TFT_WIDTH - 10)) {
-      g_timerSz--;
-      setupFont(g_timerSz);
-      spr.getTextBounds(timerFinalStr, 0, 0, &x1, &y1, &w, &h);
-  }
-
-  if (timerPosition >= 1 && timerPosition <= 3) g_timerY = 5 - y1;
-  else g_timerY = TFT_HEIGHT - 5 - h - y1;
+  if (timerPosition >= 1 && timerPosition <= 3) g_timerY = 1;
+  else g_timerY = SCREEN_HEIGHT - 2 - h;
 }
 
 void updateTimerDisplay(unsigned long remainingMs) {
@@ -267,7 +179,7 @@ void updateTimerDisplay(unsigned long remainingMs) {
     strcpy(timerFinalStr, newTimerStr);
     if (!displayScrambling) {
         strcpy(timerWorkStr, newTimerStr);
-        drawSprite();
+        drawOledBuffer();
     }
   }
 }
@@ -276,28 +188,24 @@ void beginScramble(const char* targetText) {
   char finalStr[128];
   snprintf(finalStr, sizeof(finalStr), "_%s_", targetText);
 
-  char tempLines[6][128];
+  char tempLines[6][64];
   int tempCount;
-  g_textSz = buildLayout(finalStr, tempLines, &tempCount, &g_startY, &g_charH);
+  buildLayout(finalStr, tempLines, &tempCount, &g_startY, &g_charH);
 
   g_lineCount = (tempCount > 6) ? 6 : tempCount;
 
   for (int i = 0; i < 6; i++) {
-    memset(finalLines[i], 0, 128);
-    memset(workLines[i], 0, 128);
+    memset(finalLines[i], 0, 64);
+    memset(workLines[i], 0, 64);
   }
 
   for (int i = 0; i < g_lineCount; i++) {
-    strncpy(finalLines[i], tempLines[i], 127);
+    strncpy(finalLines[i], tempLines[i], 63);
   }
 
-  setupFont(g_textSz);
-  int16_t x1, y1; uint16_t w, h;
-  spr.getTextBounds("Ay|", 0, 0, &x1, &y1, &w, &h);
-  int blockH = g_lineCount * h;
-  g_startY = (TFT_HEIGHT - blockH) / 2 - y1;
-
-  // g_startX is no longer needed since each line calculates its own center
+  int blockH = g_lineCount * g_charH;
+  g_startY = (SCREEN_HEIGHT - blockH) / 2;
+  if (g_startY < 0) g_startY = 0;
 
   setupTimerDisplay(targetText, displayDurationMs);
 
@@ -310,39 +218,39 @@ void beginScramble(const char* targetText) {
   displayScrambleFrames = 0;
 }
 
-void drawSprite() {
-  spr.fillScreen(COLOR_BG);
-  spr.setTextColor(COLOR_TEXT);
-
-  setupFont(g_textSz);
+void drawOledBuffer() {
+  oled.clearDisplay();
+  oled.setTextColor(SH110X_WHITE);
+  
+  oled.setTextSize(textScale > 0 ? textScale : 1);
   for (int i = 0; i < g_lineCount; i++) {
     int16_t x1, y1; uint16_t w, h;
-    spr.getTextBounds(workLines[i], 0, 0, &x1, &y1, &w, &h);
+    oled.getTextBounds(workLines[i], 0, 0, &x1, &y1, &w, &h);
 
-    int currentX = (TFT_WIDTH - w) / 2 - x1;
+    int currentX = (SCREEN_WIDTH - w) / 2 - x1;
     if (currentX < 0) currentX = 0;
 
     int yPos = g_startY + (i * g_charH);
-    spr.setCursor(currentX, yPos);
-    spr.print(workLines[i]);
+    oled.setCursor(currentX, yPos);
+    oled.print(workLines[i]);
   }
 
   if (timerFinalStr[0] != '\0') {
-    setupFont(g_timerSz);
+    oled.setTextSize(1);
     int16_t x1, y1; uint16_t w, h;
-    spr.getTextBounds(timerWorkStr, 0, 0, &x1, &y1, &w, &h);
+    oled.getTextBounds(timerWorkStr, 0, 0, &x1, &y1, &w, &h);
 
     int currentTimerX = 0;
-    if (timerPosition == 1 || timerPosition == 4) currentTimerX = 5 - x1;
-    else if (timerPosition == 2 || timerPosition == 5) currentTimerX = (TFT_WIDTH - w) / 2 - x1;
-    else if (timerPosition == 3 || timerPosition == 6) currentTimerX = TFT_WIDTH - w - 5 - x1;
+    if (timerPosition == 1 || timerPosition == 4) currentTimerX = 2;
+    else if (timerPosition == 2 || timerPosition == 5) currentTimerX = (SCREEN_WIDTH - w) / 2 - x1;
+    else if (timerPosition == 3 || timerPosition == 6) currentTimerX = SCREEN_WIDTH - w - 2 - x1;
     if (currentTimerX < 0) currentTimerX = 0;
 
-    spr.setCursor(currentTimerX, g_timerY);
-    spr.print(timerWorkStr);
+    oled.setCursor(currentTimerX, g_timerY);
+    oled.print(timerWorkStr);
   }
 
-  tft.drawBuffer(0, 0, spr.width(), spr.height(), spr.getBuffer());
+  oled.display();
 }
 
 void handleDisplayScramble() {
@@ -376,7 +284,7 @@ void handleDisplayScramble() {
         timerWorkStr[tlen] = '\0';
       }
 
-      drawSprite();
+      drawOledBuffer();
 
       if (displayScrambleFrames >= scrambleDurationFrames) {
         displayScramblePhase = 1;
@@ -412,7 +320,7 @@ void handleDisplayScramble() {
                 workLines[i][j] = ' ';
             }
           }
-          drawSprite();
+          drawOledBuffer();
           displayRevealChar++;
         } else {
           displayRevealLine++;
@@ -421,7 +329,7 @@ void handleDisplayScramble() {
       } else {
         displayScrambling = false;
         displayFinishedTime = ms;
-        drawSprite();
+        drawOledBuffer();
       }
     }
   }
@@ -432,8 +340,7 @@ void displayIdle() {
   memset(timerFinalStr, 0, sizeof(timerFinalStr));
   memset(timerWorkStr, 0, sizeof(timerWorkStr));
   g_lineCount = 0;
-  spr.fillScreen(COLOR_BG);
-  tft.drawBuffer(0, 0, spr.width(), spr.height(), spr.getBuffer());
+  displayClear();
 }
 
 #endif
