@@ -331,7 +331,7 @@ void handleBLE() {
           parseCommand(msg);
         }
       } else {
-        break; 
+        break;
       }
     }
     if (incomingBleBuffer.indexOf('\n') == -1) {

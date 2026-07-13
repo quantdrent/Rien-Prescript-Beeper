@@ -60,6 +60,13 @@ static int displayScrambleFrames = 0;
 unsigned long displayFinishedTime = 0;
 
 void setupFont(int sz) {
+  if (!useProportionalFont) {
+    spr.setFont(NULL);
+    int realSz = sz + 1; // Default font is quite small, so bump it slightly
+    spr.setTextSize(realSz > 0 ? realSz : 1);
+    return;
+  }
+
   if (sz <= 0) {
     spr.setFont(NULL);
     spr.setTextSize(1);

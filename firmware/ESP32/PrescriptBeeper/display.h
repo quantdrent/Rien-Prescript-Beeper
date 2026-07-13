@@ -25,6 +25,7 @@ static const int NUM_SCRAMBLE_CHARS = sizeof(SCRAMBLE_CHARS) - 1;
 static char finalLines[6][64];
 static char workLines[6][64];
 static int g_lineCount, g_startY, g_charH;
+static int g_textSz = 1;
 
 static char timerFinalStr[32];
 static char timerWorkStr[32];
@@ -46,7 +47,7 @@ void displayInit() {
   if (!oled.begin(0x3C, true)) {
     Serial.println("OLED FAILED");
   }
-  oled.setRotation(2); // Based on original IndexProxy
+  oled.setRotation(2);
   oled.clearDisplay();
   oled.display();
 }
@@ -56,23 +57,99 @@ void displayClear() {
   oled.display();
 }
 
-int getTextWidth(const char* text) {
-  int16_t x1, y1;
-  uint16_t w, h;
-  oled.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+const uint8_t PROP_WIDTHS[96] = {
+  3, 1, 3, 5, 5, 5, 5, 3, 3, 3, 5, 5, 3, 5, 2, 5,
+  5, 3, 5, 5, 5, 5, 5, 5, 5, 5, 1, 2, 4, 5, 4, 5,
+  5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5, 5, 5, 5, 5, 5,
+  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5, 4, 5, 5,
+  3, 5, 5, 5, 5, 5, 4, 5, 5, 3, 4, 4, 3, 5, 5, 5,
+  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 1, 3, 5, 5
+};
+
+const uint8_t PROP_OFFSETS[96] = {
+  0, 2, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 2, 0, 3, 0,
+  0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 0, 1, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0,
+  1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0
+};
+
+int getTextWidth(const char* text, int sz) {
+  if (!useProportionalFont) {
+    return strlen(text) * 6 * sz;
+  }
+  int w = 0;
+  while (*text) {
+    unsigned char c = *text++;
+    if (c >= 32 && c <= 127) {
+      w += (PROP_WIDTHS[c - 32] + 1) * sz;
+    } else {
+      w += 6 * sz;
+    }
+  }
   return w;
 }
 
 int buildLayout(const char* text, char linesBuf[][64], int* lineCount, int* outStartY, int* outCharH) {
-  oled.setTextSize(textScale > 0 ? textScale : 1);
-  int charH = 8 * (textScale > 0 ? textScale : 1); // standard font height
+  int sz = textScale > 0 ? textScale : 1;
   int maxW = SCREEN_WIDTH - 4;
   int maxH = SCREEN_HEIGHT;
 
-  for (int i = 0; i < 6; i++) memset(linesBuf[i], 0, 64);
+  while (sz >= 1) {
+    int charH = 8 * sz;
 
-  int li = 0;
-  int charIdx = 0;
+    int lines = 1;
+    char lineStr[64];
+    memset(lineStr, 0, sizeof(lineStr));
+    int lineLen = 0;
+    const char* p = text;
+
+    while (*p) {
+      if (*p == ' ') {
+        const char* q = p + 1;
+        int wl = 0;
+        char wordBuf[32];
+        memset(wordBuf, 0, sizeof(wordBuf));
+        while (*q && *q != ' ' && wl < 31) { wordBuf[wl++] = *q++; }
+
+        char testBuf[64];
+        if (lineLen == 0) snprintf(testBuf, sizeof(testBuf), "%s", wordBuf);
+        else snprintf(testBuf, sizeof(testBuf), "%s %s", lineStr, wordBuf);
+
+        if (getTextWidth(testBuf, sz) > maxW && lineLen > 0) {
+          lines++;
+          memset(lineStr, 0, sizeof(lineStr));
+          lineLen = 0;
+          p++;
+          continue;
+        }
+      }
+
+      lineStr[lineLen] = *p;
+      lineStr[lineLen + 1] = '\0';
+
+      if (getTextWidth(lineStr, sz) > maxW && lineLen > 0) {
+        lines++;
+        lineStr[0] = *p;
+        lineStr[1] = '\0';
+        lineLen = 1;
+      } else {
+        lineLen++;
+      }
+      p++;
+    }
+
+    if (lines * charH <= maxH) break;
+    sz--;
+  }
+
+  if (sz < 1) sz = 1;
+
+  int charH = 8 * sz;
+  *outCharH = charH;
+  for (int i = 0; i < 6; i++) memset(linesBuf[i], 0, 64);
+  int li = 0, charIdx = 0;
   const char* p = text;
 
   while (*p && li < 6) {
@@ -87,33 +164,24 @@ int buildLayout(const char* text, char linesBuf[][64], int* lineCount, int* outS
       if (charIdx == 0) snprintf(testBuf, sizeof(testBuf), "%s", wordBuf);
       else snprintf(testBuf, sizeof(testBuf), "%s %s", linesBuf[li], wordBuf);
 
-      if (getTextWidth(testBuf) > maxW && charIdx > 0) {
-        li++;
-        charIdx = 0;
-        p++;
+      if (getTextWidth(testBuf, sz) > maxW && charIdx > 0) {
+        li++; charIdx = 0; p++;
         if (li >= 6) break;
         continue;
       }
     }
-
     linesBuf[li][charIdx] = *p;
     linesBuf[li][charIdx + 1] = '\0';
-
-    if (getTextWidth(linesBuf[li]) > maxW && charIdx > 0) {
+    if (getTextWidth(linesBuf[li], sz) > maxW && charIdx > 0) {
       linesBuf[li][charIdx] = '\0';
-      li++;
-      charIdx = 0;
+      li++; charIdx = 0;
       if (li >= 6) break;
       linesBuf[li][charIdx++] = *p;
-    } else {
-      charIdx++;
-    }
+    } else charIdx++;
     p++;
   }
-
   *lineCount = li + 1;
-  *outCharH = charH;
-  return textScale > 0 ? textScale : 1;
+  return sz;
 }
 
 void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
@@ -146,13 +214,8 @@ void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
   }
   strcpy(timerWorkStr, timerFinalStr);
 
-  int16_t x1, y1;
-  uint16_t w, h;
-  oled.setTextSize(1);
-  oled.getTextBounds(timerFinalStr, 0, 0, &x1, &y1, &w, &h);
-
   if (timerPosition >= 1 && timerPosition <= 3) g_timerY = 1;
-  else g_timerY = SCREEN_HEIGHT - 2 - h;
+  else g_timerY = SCREEN_HEIGHT - 2 - 8;
 }
 
 void updateTimerDisplay(unsigned long remainingMs) {
@@ -190,8 +253,8 @@ void beginScramble(const char* targetText) {
 
   char tempLines[6][64];
   int tempCount;
-  buildLayout(finalStr, tempLines, &tempCount, &g_startY, &g_charH);
 
+  g_textSz = buildLayout(finalStr, tempLines, &tempCount, &g_startY, &g_charH);
   g_lineCount = (tempCount > 6) ? 6 : tempCount;
 
   for (int i = 0; i < 6; i++) {
@@ -221,33 +284,61 @@ void beginScramble(const char* targetText) {
 void drawOledBuffer() {
   oled.clearDisplay();
   oled.setTextColor(SH110X_WHITE);
-  
-  oled.setTextSize(textScale > 0 ? textScale : 1);
-  for (int i = 0; i < g_lineCount; i++) {
-    int16_t x1, y1; uint16_t w, h;
-    oled.getTextBounds(workLines[i], 0, 0, &x1, &y1, &w, &h);
+  oled.setFont(NULL);
 
-    int currentX = (SCREEN_WIDTH - w) / 2 - x1;
+  for (int i = 0; i < g_lineCount; i++) {
+    int w = getTextWidth(workLines[i], g_textSz);
+    int currentX = (SCREEN_WIDTH - w) / 2;
     if (currentX < 0) currentX = 0;
 
     int yPos = g_startY + (i * g_charH);
-    oled.setCursor(currentX, yPos);
-    oled.print(workLines[i]);
+
+    if (!useProportionalFont) {
+      oled.setTextSize(g_textSz);
+      oled.setCursor(currentX, yPos);
+      oled.print(workLines[i]);
+    } else {
+      int cx = currentX;
+      for (int j = 0; j < strlen(workLines[i]); j++) {
+        unsigned char c = workLines[i][j];
+        if (c >= 32 && c <= 127) {
+          int offset = PROP_OFFSETS[c - 32];
+          oled.drawChar(cx - offset, yPos, c, SH110X_WHITE, SH110X_WHITE, g_textSz);
+          cx += (PROP_WIDTHS[c - 32] + 1) * g_textSz;
+        } else {
+          oled.drawChar(cx, yPos, c, SH110X_WHITE, SH110X_BLACK, g_textSz);
+          cx += 6 * g_textSz;
+        }
+      }
+    }
   }
 
   if (timerFinalStr[0] != '\0') {
-    oled.setTextSize(1);
-    int16_t x1, y1; uint16_t w, h;
-    oled.getTextBounds(timerWorkStr, 0, 0, &x1, &y1, &w, &h);
-
+    int w = getTextWidth(timerWorkStr, 1);
     int currentTimerX = 0;
     if (timerPosition == 1 || timerPosition == 4) currentTimerX = 2;
-    else if (timerPosition == 2 || timerPosition == 5) currentTimerX = (SCREEN_WIDTH - w) / 2 - x1;
-    else if (timerPosition == 3 || timerPosition == 6) currentTimerX = SCREEN_WIDTH - w - 2 - x1;
+    else if (timerPosition == 2 || timerPosition == 5) currentTimerX = (SCREEN_WIDTH - w) / 2;
+    else if (timerPosition == 3 || timerPosition == 6) currentTimerX = SCREEN_WIDTH - w - 2;
     if (currentTimerX < 0) currentTimerX = 0;
 
-    oled.setCursor(currentTimerX, g_timerY);
-    oled.print(timerWorkStr);
+    if (!useProportionalFont) {
+      oled.setTextSize(1);
+      oled.setCursor(currentTimerX, g_timerY);
+      oled.print(timerWorkStr);
+    } else {
+      int cx = currentTimerX;
+      for (int j = 0; j < strlen(timerWorkStr); j++) {
+        unsigned char c = timerWorkStr[j];
+        if (c >= 32 && c <= 127) {
+          int offset = PROP_OFFSETS[c - 32];
+          oled.drawChar(cx - offset, g_timerY, c, SH110X_WHITE, SH110X_WHITE, 1);
+          cx += (PROP_WIDTHS[c - 32] + 1);
+        } else {
+          oled.drawChar(cx, g_timerY, c, SH110X_WHITE, SH110X_BLACK, 1);
+          cx += 6;
+        }
+      }
+    }
   }
 
   oled.display();

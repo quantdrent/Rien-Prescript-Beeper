@@ -30,7 +30,7 @@ void setup() {
   } else {
     Serial.println("LittleFS Mounted");
   }
-  
+
   readSettings();
 
   displayInit();

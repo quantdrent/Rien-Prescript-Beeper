@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="stylesheet" href="css/navbars.css">
-<link rel="stylesheet" href="css/index.css">
-<link rel="stylesheet" href="css/text.css">
-<link rel="icon" type="image/x-icon" href="img/device.png">
-<script src="javarice/interface.js" defer></script>
-<script src="javarice/prescripts.js" defer></script>
-<script src="javarice/scrambler.js" defer></script>
-<script src="javarice/states.js" defer ></script>
-<script src="javarice/will.js" defer></script>
-<script src="javarice/ble.js" defer></script>
-<script src="javarice/customs.js" defer></script>
-<script src="javarice/settings.js" defer></script>
+<link rel="stylesheet" href="assets/css/navbars.css">
+<link rel="stylesheet" href="assets/css/index.css">
+<link rel="stylesheet" href="assets/css/text.css">
+<link rel="icon" type="image/x-icon" href="assets/img/device.png">
+<script src="assets/js/interface.js" defer></script>
+<script src="assets/js/prescripts.js" defer></script>
+<script src="assets/js/scrambler.js" defer></script>
+<script src="assets/js/states.js" defer ></script>
+<script src="assets/js/will.js" defer></script>
+<script src="assets/js/ble.js" defer></script>
+<script src="assets/js/customs.js" defer></script>
+<script src="assets/js/settings.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Will of the City</title>
@@ -35,15 +35,15 @@
     </div>
     <div id="navbar">
         <div class="navItem">
-            <img src="img/grace.png" alt="">
+            <img src="assets/img/grace.png" alt="">
             <span id="achievedCount">PASS: 0</span>
         </div>
         <div class="navItem">
-            <img src="img/karma.png" alt="">
+            <img src="assets/img/karma.png" alt="">
             <span id="failedCount">FAILED: 0</span>
         </div>
         <div class="navItem">
-            <img src="img/device.png" alt="">
+            <img src="assets/img/device.png" alt="">
             <span id="totalCount">PRESCRIPTS: 0</span>
         </div>
     </div>
@@ -103,7 +103,7 @@
                     Global Text Scale:
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="number" id="textScaleInput" value="1" min="1" max="10">
-                        <img src="img/refresh.svg" id="resetTextScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <img src="assets/img/refresh.svg" id="resetTextScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Base font size multiplier for the device screen.</p>
@@ -120,7 +120,7 @@
                             <option value="5">Bottom Middle</option>
                             <option value="6">Bottom Right</option>
                         </select>
-                        <img src="img/refresh.svg" id="resetTimerPosition" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <img src="assets/img/refresh.svg" id="resetTimerPosition" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Where to anchor the countdown timer during a prescript.</p>
@@ -129,7 +129,7 @@
                     Timer Scale Multiplier:
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="number" id="timerScaleInput" value="5" step="1" min="1" max="50">
-                        <img src="img/refresh.svg" id="resetTimerScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <img src="assets/img/refresh.svg" id="resetTimerScale" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Scales the timer relative to the Global Text Scale (10 = 1x, 5 = 0.5x).</p>
@@ -142,7 +142,7 @@
                     Scramble Frames:
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="number" id="scrambleFramesInput" value="20" min="5" max="120">
-                        <img src="img/refresh.svg" id="resetScrambleFrames" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <img src="assets/img/refresh.svg" id="resetScrambleFrames" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">How long the full scramble chaos lasts (higher = longer).</p>
@@ -151,7 +151,7 @@
                     Scramble Speed (ms):
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="number" id="scrambleDelayInput" value="20" min="1" max="100">
-                        <img src="img/refresh.svg" id="resetScrambleDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <img src="assets/img/refresh.svg" id="resetScrambleDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Delay per frame during chaos (lower = faster).</p>
@@ -160,7 +160,7 @@
                     Reveal Speed (ms):
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="number" id="revealDelayInput" value="20" min="1" max="100">
-                        <img src="img/refresh.svg" id="resetRevealDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <img src="assets/img/refresh.svg" id="resetRevealDelay" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Delay per letter when revealing (lower = faster).</p>
@@ -187,7 +187,7 @@
         </div>
     </div>
 
-    <audio id="scrambleAudio" src="media/scramble.mp3" preload="auto"></audio>
+    <audio id="scrambleAudio" src="assets/media/scramble.mp3" preload="auto"></audio>
     <a id="guideLink" href="https://github.com/quantdrent/Rien-Prescript-Beeper" target="_blank" rel="noopener noreferrer">_Beeper Device Guide_</a>
     <button id="factoryResetBtn" disabled>_RESET DEVICE_</button>
     <a id="forkLink" href="https://kritzkingvoid.github.io/Prescripts/" target="_blank" rel="noopener noreferrer">_Forked from Kritzkingvoid_</a>

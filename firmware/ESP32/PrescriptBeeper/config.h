@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 
-// Global settings
 extern int textScale;
 extern int scrambleDurationFrames;
 extern int scrambleDelayMs;
@@ -13,31 +12,26 @@ extern float timerScale;
 extern bool bleRequirePin;
 extern bool useProportionalFont;
 
-// OLED Display (Adafruit_SH110X)
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
 #define I2C_SDA_PIN 3
 #define I2C_SCL_PIN 4
 
-// Buttons
 #define BUTTON_PASS_PIN  6
 #define BUTTON_FAIL_PIN  10
-#define BUTTON_POWER_PIN 7 // Assuming an optional power button for ESP32
+#define BUTTON_POWER_PIN 7
 
 #define DEBOUNCE_DELAY  50
 
-// BLE Settings
 #define BLE_CHUNK_SIZE      20
 #define BLE_CHUNK_DELAY_MS  10
 
-// Storage
 #define JSON_BUF_SIZE   2048
 #define CUSTOMS_FILE    "/customs.txt"
 #define STATS_FILE      "/stats.txt"
 #define SETTINGS_FILE   "/settings.txt"
 
-// Default Values
 #define DEFAULT_TEXT_SCALE          1
 #define DEFAULT_SCRAMBLE_FRAMES     20
 #define DEFAULT_SCRAMBLE_DELAY      20
