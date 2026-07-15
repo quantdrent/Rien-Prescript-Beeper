@@ -41,7 +41,7 @@ This is the recommended "Advanced" version with a tft color screen, custom propo
 - `Adafruit LittleFS`
 - `Adafruit ST7735 and ST7789 Library`
 **3D Printing (Case):**
-- **For the Advanced Build (nRF52840 Supermini):** Use `models/Advanced-Case.3mf` or `models/Advanced-Case.stl`
+- **For the Advanced Build (nRF52840 Supermini):** Use `models/Case.3mf` or `models/Case.stl`
 - *(Tinkercad remix link available in `models/tinkercadlink.txt`. I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
 
 **Wiring Diagram:**
@@ -100,7 +100,8 @@ instruction for this version have not been completed. this was a port made by so
 - `Adafruit ST7735 and ST7789 Library`
 
 **3D Printing (Case):**
-- **Note:** You will likely need to remix the Advanced-Case to fit the ESP32-C3 port cutouts, as the current `Legacy-Case` is shaped for the OLED screen.
+- **For the Standard Build (ESP32-C3 Supermini):** Use `models/Case.3mf` or `models/Case.stl`
+- *(Tinkercad remix link available in `models/tinkercadlink.txt`. I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
 
 **Wiring Table:**
 | ESP32-C3 SuperMini Pin | Component / Peripheral Pin |
@@ -115,7 +116,7 @@ instruction for this version have not been completed. this was a port made by so
 | **`3.3V`**   | TFT `VCC`, Buttons `VCC` |
 | **`GND`**    | TFT `GND`, Buttons `GND` |
 
-*(Note: The slide switch does not connect to a GPIO pin; it should be wired directly between your battery and the board's power input to act as a physical on/off switch).*
+*(Note: The slide switch does not connect to a GPIO pin; it should be wired directly between your charge module output and the board's power input to act as a physical on/off switc, basically look at the wiring diagram in legacy versionh).*
 </details>
 
 <details>
