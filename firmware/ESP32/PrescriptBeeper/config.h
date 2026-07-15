@@ -21,8 +21,8 @@ extern bool useProportionalFont;
 #define TFT_DC    3
 #define TFT_RST   4
 
-#define BUTTON_PASS_PIN  6
-#define BUTTON_FAIL_PIN  10
+#define BUTTON_PASS_PIN  5
+#define BUTTON_FAIL_PIN  6
 #define BUTTON_POWER_PIN 7
 
 #define DEBOUNCE_DELAY  50

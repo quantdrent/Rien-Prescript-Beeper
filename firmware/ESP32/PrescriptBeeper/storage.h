@@ -22,6 +22,7 @@ float timerScale = 1.0;
 bool bleRequirePin = false;
 bool useProportionalFont = false;
 uint16_t textColor = DEFAULT_TEXT_COLOR;
+bool timerFormatLong = false;
 
 int cachedTotalPrescripts = -1;
 
@@ -45,6 +46,7 @@ void readSettings() {
       int c6 = content.indexOf(',', c5 + 1);
       int c7 = content.indexOf(',', c6 + 1);
       int c8 = content.indexOf(',', c7 + 1);
+      int c9 = content.indexOf(',', c8 + 1);
 
       if (c1 == -1) {
         textScale = content.toInt();
@@ -63,10 +65,17 @@ void readSettings() {
               bleRequirePin = content.substring(c6 + 1, c7).toInt() != 0;
               if (c8 != -1) {
                 useProportionalFont = content.substring(c7 + 1, c8).toInt() != 0;
-                textColor = (uint16_t)content.substring(c8 + 1).toInt();
+                if (c9 != -1) {
+                  textColor = (uint16_t)content.substring(c8 + 1, c9).toInt();
+                  timerFormatLong = content.substring(c9 + 1).toInt() != 0;
+                } else {
+                  textColor = (uint16_t)content.substring(c8 + 1).toInt();
+                  timerFormatLong = false;
+                }
               } else {
                 useProportionalFont = content.substring(c7 + 1).toInt() != 0;
                 textColor = DEFAULT_TEXT_COLOR;
+                timerFormatLong = false;
               }
             } else {
               bleRequirePin = content.substring(c6 + 1).toInt() != 0;
@@ -86,7 +95,7 @@ void writeSettings() {
   LittleFS.remove(SETTINGS_FILE);
   File f = LittleFS.open(SETTINGS_FILE, "w");
   if (f) {
-    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "," + String(textColor));
+    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "," + String(textColor) + "," + String(timerFormatLong ? 1 : 0));
     f.close();
   }
 }
@@ -98,7 +107,7 @@ void clearCustoms() {
 
 void sendSettings() {
   if (!bleNotifyReady()) return;
-  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "," + String(textColor) + "\n";
+  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "," + String(textColor) + "," + String(timerFormatLong ? 1 : 0) + "\n";
   sendChunked(msg.c_str(), msg.length());
 }
 
@@ -195,15 +204,10 @@ void sendCustomRules() {
     return;
   }
 
-  char buf[JSON_BUF_SIZE];
-  int pos = 0;
   const char* prefix = "RES:CUSTOMS|MSG:[";
-  int prefixLen = strlen(prefix);
-  memcpy(buf, prefix, prefixLen);
-  pos = prefixLen;
+  sendChunked(prefix, strlen(prefix));
 
   bool first = true;
-
   while (customsFile.available()) {
     String line = customsFile.readStringUntil('\n');
     line.trim();
@@ -211,23 +215,16 @@ void sendCustomRules() {
 
     line.replace("\"", "\\\"");
 
-    int needed = (first ? 0 : 1) + 1 + line.length() + 1;
-    if (pos + needed + 3 >= JSON_BUF_SIZE) break;
-
-    if (!first) buf[pos++] = ',';
-    buf[pos++] = '"';
-    memcpy(buf + pos, line.c_str(), line.length());
-    pos += line.length();
-    buf[pos++] = '"';
+    String out = first ? "\"" : ",\"";
+    out += line;
+    out += "\"";
+    sendChunked(out.c_str(), out.length());
     first = false;
   }
 
-  buf[pos++] = ']';
-  buf[pos++] = '\n';
-  buf[pos] = '\0';
-
+  const char* suffix = "]\n";
+  sendChunked(suffix, strlen(suffix));
   customsFile.close();
-  sendChunked(buf, pos);
 }
 
 int countStoredPrescripts() {
@@ -326,17 +323,41 @@ bool parsePrescriptLine(const String& line, int& outDuration, bool& outRespond, 
   }
 
   int sep2 = line.indexOf('|', sep1 + 1);
+  String durStr = line.substring(0, sep1);
   if (sep2 != -1 && sep2 - sep1 <= 2) {
-    outDuration = line.substring(0, sep1).toInt();
+    outDuration = durStr == "-" ? 0 : durStr.toInt();
     outRespond = (line.substring(sep1 + 1, sep2) != "0");
     outText = line.substring(sep2 + 1);
   } else {
-    outDuration = line.substring(0, sep1).toInt();
+    outDuration = durStr == "-" ? 0 : durStr.toInt();
     outRespond = true;
     outText = line.substring(sep1 + 1);
   }
 
-  if (outDuration <= 0) outDuration = 10;
+  if (outDuration < 0 || (outDuration == 0 && durStr != "-" && durStr != "0")) outDuration = 10;
+
+  if (outText.length() > 0) {
+    int startIndex = 0;
+    while ((startIndex = outText.indexOf("{RAND:", startIndex)) != -1) {
+      int dashIndex = outText.indexOf("-", startIndex + 6);
+      if (dashIndex != -1) {
+        int endIndex = outText.indexOf("}", dashIndex + 1);
+        if (endIndex != -1) {
+          long minVal = outText.substring(startIndex + 6, dashIndex).toInt();
+          long maxVal = outText.substring(dashIndex + 1, endIndex).toInt();
+          if (maxVal >= minVal) {
+            long randVal = random(minVal, maxVal + 1);
+            String replacement = String(randVal);
+            outText = outText.substring(0, startIndex) + replacement + outText.substring(endIndex + 1);
+            startIndex += replacement.length();
+            continue;
+          }
+        }
+      }
+      startIndex += 6;
+    }
+  }
+
   return outText.length() > 0;
 }
 

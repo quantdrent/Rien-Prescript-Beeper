@@ -2,19 +2,23 @@ let customPrescripts = [];
 let pendingDeviceCustoms = [];
 
 function prescriptToString(p) {
-    return `${p.duration}|${p.respond === false ? 0 : 1}|${p.text}`;
+    let durStr = (p.duration === 0 || p.duration === "-") ? "-" : (p.duration === undefined ? 10 : p.duration);
+    return `${durStr}|${p.respond === false ? 0 : 1}|${p.text}`;
 }
 
 function stringToPrescript(s) {
     const sep1 = s.indexOf('|');
     if (sep1 !== -1 && sep1 < 5) {
         const sep2 = s.indexOf('|', sep1 + 1);
+        let durStr = s.substring(0, sep1);
+        let durVal = parseInt(durStr, 10);
+        let dur = durStr === "-" ? "-" : (isNaN(durVal) ? 10 : durVal);
+
         if (sep2 !== -1 && sep2 - sep1 <= 2) {
-            let dur = parseInt(s.substring(0, sep1), 10) || 10;
             let res = s.substring(sep1 + 1, sep2) !== '0';
             return { duration: dur, respond: res, text: s.substring(sep2 + 1) };
         } else {
-            return { duration: parseInt(s.substring(0, sep1), 10) || 10, respond: true, text: s.substring(sep1 + 1) };
+            return { duration: dur, respond: true, text: s.substring(sep1 + 1) };
         }
     }
     return { duration: 10, respond: true, text: s };
@@ -60,6 +64,66 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendBtn = document.getElementById("sendCustomBtn");
     const input = document.getElementById("newCustomInput");
     const durInput = document.getElementById("newCustomDuration");
+    const unlimInput = document.getElementById("newCustomUnlimited");
+    if (unlimInput && durInput) {
+        unlimInput.addEventListener("change", () => {
+            durInput.disabled = unlimInput.checked;
+        });
+    }
+
+    const respondInput = document.getElementById("newCustomRespond");
+    const colorPicker = document.getElementById("inlineColorPicker");
+    const colorizeBtn = document.getElementById("colorizeBtn");
+
+    const tabVisualEditorBtn = document.getElementById("tabVisualEditorBtn");
+    const tabRawEditorBtn = document.getElementById("tabRawEditorBtn");
+    const visualEditorContainer = document.getElementById("visualEditorContainer");
+    const rawEditorContainer = document.getElementById("rawEditorContainer");
+    const rawEditorTextarea = document.getElementById("rawEditorTextarea");
+    const saveRawEditorBtn = document.getElementById("saveRawEditorBtn");
+
+    if (tabVisualEditorBtn && tabRawEditorBtn) {
+        tabVisualEditorBtn.addEventListener("click", () => {
+            tabVisualEditorBtn.classList.add("active");
+            tabRawEditorBtn.classList.remove("active");
+            visualEditorContainer.style.display = "flex";
+            rawEditorContainer.style.display = "none";
+            renderCustomsList();
+        });
+
+        tabRawEditorBtn.addEventListener("click", () => {
+            tabRawEditorBtn.classList.add("active");
+            tabVisualEditorBtn.classList.remove("active");
+            visualEditorContainer.style.display = "none";
+            rawEditorContainer.style.display = "block";
+
+            let rawText = "";
+            customPrescripts.forEach(p => {
+                rawText += prescriptToString(p) + "\n";
+            });
+            rawEditorTextarea.value = rawText.trim();
+        });
+    }
+
+    let rawEditorTimeout = null;
+    if (rawEditorTextarea) {
+        rawEditorTextarea.addEventListener("input", () => {
+            if (rawEditorTimeout) clearTimeout(rawEditorTimeout);
+            rawEditorTimeout = setTimeout(() => {
+                const lines = rawEditorTextarea.value.split('\n');
+                const newPrescripts = [];
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line && !line.startsWith('#')) {
+                        newPrescripts.push(stringToPrescript(line));
+                    }
+                }
+                customPrescripts = newPrescripts;
+                savePrescripts();
+                syncCustomsToDevice();
+            }, 800); // Auto-save after 800ms of no typing
+        });
+    }
 
     const syncModal = document.getElementById("syncModal");
     const closeSync = document.getElementById("closeSync");
@@ -119,10 +183,137 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function getSurroundingTag(text, cursorStart, cursorEnd) {
+        let tagStart = text.lastIndexOf('{#', Math.max(0, cursorStart));
+        if (tagStart !== -1) {
+            let hexEnd = text.indexOf('}', tagStart + 2);
+            if (hexEnd !== -1) {
+                let closeTag = text.indexOf('{}', hexEnd + 1);
+                if (closeTag !== -1) {
+                    if (cursorEnd <= closeTag + 2) {
+                        const hex = text.substring(tagStart + 2, hexEnd);
+                        if (hex.match(/^[0-9A-Fa-f]{6}$/)) {
+                            return { start: tagStart, end: closeTag + 2, textInside: text.substring(hexEnd + 1, closeTag) };
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function updateColorizeBtn() {
+        if (!input || !colorizeBtn) return;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const tagInfo = getSurroundingTag(input.value, start, end);
+        if (tagInfo) {
+            colorizeBtn.textContent = "Remove Color";
+            colorizeBtn.style.color = "#ff9999";
+            colorizeBtn.style.borderColor = "#ff9999";
+        } else {
+            colorizeBtn.textContent = "Colorize Highlighted";
+            colorizeBtn.style.color = "#99edff";
+            colorizeBtn.style.borderColor = "#99edff";
+        }
+    }
+
+    if (input) {
+        input.addEventListener("mouseup", updateColorizeBtn);
+        input.addEventListener("keyup", updateColorizeBtn);
+        input.addEventListener("focus", updateColorizeBtn);
+    }
+
+    if (colorizeBtn && input && colorPicker) {
+        colorizeBtn.addEventListener("click", () => {
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            const tagInfo = getSurroundingTag(text, start, end);
+
+            if (tagInfo) {
+                const before = text.substring(0, tagInfo.start);
+                const after = text.substring(tagInfo.end);
+                input.value = before + tagInfo.textInside + after;
+                input.focus();
+                input.setSelectionRange(before.length, before.length + tagInfo.textInside.length);
+            } else {
+                if (start !== end) {
+                    const hex = colorPicker.value.toUpperCase();
+                    const before = text.substring(0, start);
+                    const selected = text.substring(start, end);
+                    const after = text.substring(end);
+                    input.value = `${before}{${hex}}${selected}{}${after}`;
+                    input.focus();
+                    const newEnd = start + hex.length + 4 + selected.length + 2;
+                    input.setSelectionRange(newEnd, newEnd);
+                }
+            }
+            updateColorizeBtn();
+        });
+    }
+
+    const previewNewBtn = document.getElementById("previewNewBtn");
+    const previewDiv = document.getElementById("newCustomPreview");
+
+    if (previewNewBtn && previewDiv && input) {
+        previewNewBtn.addEventListener("click", () => {
+            if (previewDiv.style.display === "none") {
+                let html = input.value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                html = html.replace(/\{#([0-9A-Fa-f]{6})\}(.*?)\{\}/gi, '<span style="color: #$1; text-shadow: 0 0 5px #$1cc, 0 0 10px #$180;">$2</span>');
+                previewDiv.innerHTML = html;
+                previewDiv.style.display = "block";
+                input.style.display = "none";
+                previewNewBtn.textContent = "Edit RAW";
+                previewNewBtn.style.color = "#000";
+                previewNewBtn.style.background = "#99edff";
+                previewDiv.focus();
+            } else {
+                previewDiv.style.display = "none";
+                input.style.display = "block";
+                previewNewBtn.textContent = "Preview";
+                previewNewBtn.style.color = "#99edff";
+                previewNewBtn.style.background = "none";
+            }
+        });
+
+        previewDiv.addEventListener("input", () => {
+            let raw = "";
+            for (let node of previewDiv.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    raw += node.textContent;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.tagName === 'SPAN' && node.style.color) {
+                        let c = node.style.color;
+                        let hex = "FFFFFF";
+                        if (c.startsWith('#')) {
+                            hex = c.substring(1).toUpperCase();
+                        } else {
+                            let m = c.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+                            if (m) {
+                                let r = parseInt(m[1]).toString(16).padStart(2, '0');
+                                let g = parseInt(m[2]).toString(16).padStart(2, '0');
+                                let b = parseInt(m[3]).toString(16).padStart(2, '0');
+                                hex = (r + g + b).toUpperCase();
+                            }
+                        }
+                        raw += `{#${hex}}${node.textContent}{}`;
+                    } else if (node.tagName === 'BR' || node.tagName === 'DIV') {
+                        raw += "\n" + node.textContent;
+                    } else {
+                        raw += node.textContent;
+                    }
+                }
+            }
+            input.value = raw.trim();
+        });
+    }
+
     if (addBtn) {
         addBtn.addEventListener("click", () => {
             const text = input.value.trim();
-            const duration = parseInt(durInput.value.trim(), 10) || 10;
+            const unlimEl = document.getElementById("newCustomUnlimited");
+            const duration = (unlimEl && unlimEl.checked) ? "-" : (parseInt(durInput.value.trim(), 10) || 10);
             const respondEl = document.getElementById("newCustomRespond");
             const respond = respondEl ? respondEl.checked : true;
 
@@ -142,7 +333,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sendBtn) {
         sendBtn.addEventListener("click", () => {
             const text = input.value.trim();
-            const duration = parseInt(durInput.value.trim(), 10) || 10;
+            const unlimEl = document.getElementById("newCustomUnlimited");
+            const duration = (unlimEl && unlimEl.checked) ? "-" : (parseInt(durInput.value.trim(), 10) || 10);
             const respondEl = document.getElementById("newCustomRespond");
             const respond = respondEl ? respondEl.checked : true;
 
@@ -210,7 +402,7 @@ function handleDeviceCustomsSync(deviceCustomStrings) {
     }
 
     const normalizeList = (list) => list.map(p => prescriptToString({
-        duration: p.duration || 10,
+        duration: (p.duration === "-" || p.duration === 0) ? "-" : (p.duration || 10),
         respond: p.respond !== false,
         text: p.text || ""
     }));
@@ -234,15 +426,28 @@ function updateCustomPrescriptsList(customs) {
     renderCustomsList();
 }
 
+let isSyncingCustoms = false;
+let syncCustomsRequested = false;
+
 async function syncCustomsToDevice() {
     savePrescripts();
-    if (typeof sendBleCommand === 'function') {
+    if (typeof sendBleCommand !== 'function') return;
+
+    if (isSyncingCustoms) {
+        syncCustomsRequested = true;
+        return;
+    }
+
+    isSyncingCustoms = true;
+    do {
+        syncCustomsRequested = false;
         await sendBleCommand("CLEAR_CUSTOMS");
         for (let i = 0; i < customPrescripts.length; i++) {
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 250));
             await sendBleCommand("ADD_CUSTOM", prescriptToString(customPrescripts[i]));
         }
-    }
+    } while (syncCustomsRequested);
+    isSyncingCustoms = false;
 }
 
 function renderCustomsList() {
@@ -259,10 +464,15 @@ function renderCustomsList() {
         const item = document.createElement("div");
         item.className = "custom-item";
 
+        const textContainer = document.createElement("div");
+        textContainer.style.flex = "1";
+        textContainer.style.display = "flex";
+
         const textInput = document.createElement("input");
         textInput.type = "text";
         textInput.value = prescript.text;
         textInput.className = "custom-item-text";
+        textInput.style.width = "100%";
 
         textInput.addEventListener("blur", () => {
             const newVal = textInput.value.trim();
@@ -272,19 +482,54 @@ function renderCustomsList() {
             }
         });
 
+        textContainer.appendChild(textInput);
+
         const durInputEl = document.createElement("input");
         durInputEl.type = "number";
-        durInputEl.value = prescript.duration;
+        durInputEl.value = prescript.duration === "-" ? "" : prescript.duration;
         durInputEl.className = "custom-item-duration";
         durInputEl.style.width = "40px";
+        durInputEl.min = "1";
+        if (prescript.duration === "-") {
+            durInputEl.disabled = true;
+        }
 
-        durInputEl.addEventListener("blur", () => {
-            const newDur = parseInt(durInputEl.value.trim(), 10) || 10;
+        const unlimLabel = document.createElement("label");
+        unlimLabel.style.fontSize = "0.85em";
+        unlimLabel.style.color = "#aaa";
+        unlimLabel.style.cursor = "pointer";
+        unlimLabel.style.whiteSpace = "nowrap";
+        
+        const unlimCheckbox = document.createElement("input");
+        unlimCheckbox.type = "checkbox";
+        unlimCheckbox.checked = prescript.duration === "-";
+        unlimCheckbox.style.marginRight = "2px";
+        
+        unlimLabel.appendChild(unlimCheckbox);
+        unlimLabel.appendChild(document.createTextNode(" \u221E"));
+
+        unlimCheckbox.addEventListener("change", () => {
+            durInputEl.disabled = unlimCheckbox.checked;
+            const newDur = unlimCheckbox.checked ? "-" : (parseInt(durInputEl.value.trim(), 10) || 10);
             if (newDur !== prescript.duration) {
                 customPrescripts[index] = { duration: newDur, respond: prescript.respond, text: textInput.value.trim() };
                 syncCustomsToDevice();
+                renderCustomsList();
             }
         });
+
+        durInputEl.addEventListener("blur", () => {
+            const newDur = unlimCheckbox.checked ? "-" : (parseInt(durInputEl.value.trim(), 10) || 10);
+            if (newDur !== prescript.duration) {
+                customPrescripts[index] = { duration: newDur, respond: prescript.respond, text: textInput.value.trim() };
+                syncCustomsToDevice();
+                renderCustomsList();
+            }
+        });
+
+        textContainer.appendChild(durInputEl);
+        textContainer.appendChild(unlimLabel);
+
 
         const resLabel = document.createElement("label");
         resLabel.style.display = "flex";
@@ -308,7 +553,8 @@ function renderCustomsList() {
         playBtn.textContent = "Send";
         playBtn.addEventListener("click", () => {
             if (typeof triggerManualPrescript === 'function') {
-                triggerManualPrescript(textInput.value, parseInt(durInputEl.value, 10) || 10, resInputEl.checked);
+                const triggerDur = unlimCheckbox.checked ? "-" : (parseInt(durInputEl.value.trim(), 10) || 10);
+                triggerManualPrescript(textInput.value, triggerDur, resInputEl.checked);
                 document.getElementById("customsModal").style.display = "none";
             }
         });
@@ -323,7 +569,7 @@ function renderCustomsList() {
             syncCustomsToDevice();
         });
 
-        item.appendChild(textInput);
+        item.appendChild(textContainer);
         item.appendChild(durInputEl);
         item.appendChild(resLabel);
         item.appendChild(playBtn);

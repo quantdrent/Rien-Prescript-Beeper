@@ -53,19 +53,40 @@
                 <h2 style="margin: 0;">Prescript Storage</h2>
                 <span id="closeCustoms" style="margin-top: -5px;">&times;</span>
             </div>
-            <div id="customsList">No custom prescripts loaded. Connect device first.</div>
-            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="newCustomInput" placeholder="Enter new prescript" style="flex: 1;">
-                    <input type="number" id="newCustomDuration" placeholder="Secs" value="10" min="1" style="width: 60px;">
-                    <label style="display: flex; align-items: center; font-size: 0.85em; color: #aaa; cursor: pointer; white-space: nowrap;">
-                        Res: <input type="checkbox" id="newCustomRespond" checked style="margin-left: 5px;">
-                    </label>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                <button id="tabVisualEditorBtn" class="tab-btn active">Visual Editor</button>
+                <button id="tabRawEditorBtn" class="tab-btn">Raw Editor</button>
+            </div>
+
+            <div id="visualEditorContainer">
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="newCustomInput" placeholder="Enter new prescript" style="flex: 1;">
+                        <div id="newCustomPreview" contenteditable="true" style="display: none; flex: 1; font-size: 0.85em; padding: 5px; background: #111; border: 1px solid #99edff; color: #99edff; font-family: 'code', monospace; box-sizing: border-box; overflow-x: auto; white-space: pre-wrap; outline: none; min-height: 28px; box-shadow: inset 0 0 10px rgba(153, 237, 255, 0.3);"></div>
+                        <input type="number" id="newCustomDuration" placeholder="Secs" value="10" min="1" style="width: 60px;">
+                        <label style="display: flex; align-items: center; font-size: 0.85em; color: #aaa; cursor: pointer; white-space: nowrap;">
+                            <input type="checkbox" id="newCustomUnlimited" style="margin-right: 2px;"> &#x221E;
+                        </label>
+                        <label style="display: flex; align-items: center; font-size: 0.85em; color: #aaa; cursor: pointer; white-space: nowrap;">
+                            Res: <input type="checkbox" id="newCustomRespond" checked style="margin-left: 5px;">
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px; margin-bottom: 5px;">
+                        <input type="color" id="inlineColorPicker" value="#FF0000" style="cursor: pointer; background: transparent; border: none; width: 32px; height: 32px; padding: 0;">
+                        <button id="colorizeBtn">Colorize Highlighted</button>
+                        <button id="previewNewBtn">Preview</button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="addCustomBtn" style="flex: 1;">ADD</button>
+                        <button id="sendCustomBtn" style="flex: 1;">SEND MANUAL</button>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <button id="addCustomBtn" style="flex: 1;">ADD</button>
-                    <button id="sendCustomBtn" style="flex: 1;">SEND MANUAL</button>
-                </div>
+                <div id="customsList">No custom prescripts loaded. Connect device first.</div>
+            </div>
+
+            <div id="rawEditorContainer" style="display: none;">
+                <div style="font-size: 0.85em; color: #aaa; margin-bottom: 5px;">Format: duration|respond|text (e.g. 10|1|{#FF0000}Hello{})<br>Use `{TIMER}` to show a live countdown in the prescript</div>
+                <textarea id="rawEditorTextarea" spellcheck="false" style="width: 100%; height: 300px; background: #000; color: #99edff; border: 1px solid #99edff; font-family: 'code', monospace; padding: 10px; box-sizing: border-box; outline: none; resize: vertical; margin-bottom: 20px;"></textarea>
             </div>
             
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;">
@@ -133,6 +154,18 @@
                     </div>
                 </label>
                 <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Scales the timer relative to the Global Text Scale (10 = 1x, 5 = 0.5x).</p>
+
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Timer Format:
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="timerFormatInput" style="padding: 5px; background: #000; color: #99edff; border: 1px solid #99edff; font-family: 'code', monospace;">
+                            <option value="0">Short (1h 5m 10s)</option>
+                            <option value="1">Long (1 hour 5 minutes 10 seconds)</option>
+                        </select>
+                        <img src="assets/img/refresh.svg" id="resetTimerFormat" title="Reset to default" style="width: 20px; cursor: pointer; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    </div>
+                </label>
+                <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">How the timer text should be formatted on the device and web.</p>
                 
                 <hr style="border: 1px solid #333; margin: 15px 0;">
                 

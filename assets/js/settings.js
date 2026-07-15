@@ -21,6 +21,9 @@ const resetTimerPosition = document.getElementById("resetTimerPosition");
 const timerScaleInput = document.getElementById("timerScaleInput");
 const resetTimerScale = document.getElementById("resetTimerScale");
 
+const timerFormatInput = document.getElementById("timerFormatInput");
+const resetTimerFormat = document.getElementById("resetTimerFormat");
+
 const pinToggle = document.getElementById("pinToggle");
 const fontToggle = document.getElementById("fontToggle");
 const textColorPicker = document.getElementById("textColorPicker");
@@ -35,6 +38,7 @@ let currentTimerScale = 0.5;
 let currentBleRequirePin = false;
 let currentUseProportionalFont = false;
 let currentTextColor = 48991;
+let currentTimerFormatLong = false;
 
 function hexToRgb565(hex) {
     hex = hex.replace('#', '');
@@ -74,6 +78,7 @@ if (resetScrambleDelay) resetScrambleDelay.addEventListener("click", () => scram
 if (resetRevealDelay) resetRevealDelay.addEventListener("click", () => revealDelayInput.value = 20);
 if (resetTimerPosition) resetTimerPosition.addEventListener("click", () => timerPositionInput.value = 0);
 if (resetTimerScale) resetTimerScale.addEventListener("click", () => timerScaleInput.value = 5);
+if (resetTimerFormat) resetTimerFormat.addEventListener("click", () => timerFormatInput.value = 0);
 if (resetTextColor) resetTextColor.addEventListener("click", () => textColorPicker.value = "#b8e8f8");
 
 function applySettings() {
@@ -83,6 +88,7 @@ function applySettings() {
     currentRevealDelay = parseInt(revealDelayInput.value);
     currentTimerPosition = parseInt(timerPositionInput.value);
     currentTimerScale = parseFloat(timerScaleInput.value) / 10.0;
+    currentTimerFormatLong = parseInt(timerFormatInput.value) !== 0;
 
     if (isNaN(currentTextScale) || currentTextScale < 1) currentTextScale = 1;
     if (isNaN(currentScrambleFrames) || currentScrambleFrames < 1) currentScrambleFrames = 20;
@@ -96,7 +102,7 @@ function applySettings() {
     currentTextColor = textColorPicker ? hexToRgb565(textColorPicker.value) : 48991;
 
     if (typeof txCharacteristic !== 'undefined' && txCharacteristic) {
-        let payload = `${currentTextScale},${currentScrambleFrames},${currentScrambleDelay},${currentRevealDelay},${currentTimerPosition},${currentTimerScale},${currentBleRequirePin ? 1 : 0},${currentUseProportionalFont ? 1 : 0},${currentTextColor}`;
+        let payload = `${currentTextScale},${currentScrambleFrames},${currentScrambleDelay},${currentRevealDelay},${currentTimerPosition},${currentTimerScale},${currentBleRequirePin ? 1 : 0},${currentUseProportionalFont ? 1 : 0},${currentTextColor},${currentTimerFormatLong ? 1 : 0}`;
         sendBleCommand("SET_SETTINGS", payload);
     }
     settingsModal.style.display = "none";
@@ -123,17 +129,25 @@ function updateSettingsUI(csvData) {
                 currentUseProportionalFont = parseInt(parts[7]) !== 0;
                 if (parts.length >= 9) {
                     currentTextColor = parseInt(parts[8]);
+                    if (parts.length >= 10) {
+                        currentTimerFormatLong = parseInt(parts[9]) !== 0;
+                    } else {
+                        currentTimerFormatLong = false;
+                    }
                 } else {
                     currentTextColor = 48991;
+                    currentTimerFormatLong = false;
                 }
             } else {
                 currentUseProportionalFont = false;
                 currentTextColor = 48991;
+                currentTimerFormatLong = false;
             }
         } else {
             currentBleRequirePin = false;
             currentUseProportionalFont = false;
             currentTextColor = 48991;
+            currentTimerFormatLong = false;
         }
 
         if (isNaN(currentTextScale) || currentTextScale < 1) currentTextScale = 1;
@@ -149,6 +163,7 @@ function updateSettingsUI(csvData) {
         revealDelayInput.value = currentRevealDelay;
         timerPositionInput.value = currentTimerPosition;
         timerScaleInput.value = (currentTimerScale * 10).toString();
+        if (timerFormatInput) timerFormatInput.value = currentTimerFormatLong ? 1 : 0;
 
         if (pinToggle) {
             pinToggle.checked = currentBleRequirePin;

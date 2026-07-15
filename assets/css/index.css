@@ -232,7 +232,7 @@ body {
     color: #99edff;
     border: 1px solid #99edff;
 }
-#addCustomBtn, #saveSettingsBtn, #sendCustomBtn, #exportPrescriptsBtn, #importPrescriptsBtn {
+#addCustomBtn, #saveSettingsBtn, #sendCustomBtn, #exportPrescriptsBtn, #importPrescriptsBtn, #colorizeBtn, #previewNewBtn {
     background: none;
     border: 1px solid #99edff;
     color: #99edff;
@@ -240,9 +240,35 @@ body {
     cursor: pointer;
     font-family: "code", monospace;
 }
-#addCustomBtn:hover, #saveSettingsBtn:hover, #sendCustomBtn:hover, #exportPrescriptsBtn:hover, #importPrescriptsBtn:hover {
+#addCustomBtn:hover, #saveSettingsBtn:hover, #sendCustomBtn:hover, #exportPrescriptsBtn:hover, #importPrescriptsBtn:hover, #colorizeBtn:hover, #previewNewBtn:hover {
     background: #99edff;
     color: #000;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-family: "code", monospace;
+    font-size: 1em;
+    cursor: pointer;
+    padding: 5px 0;
+    transition: all 0.2s;
+}
+.tab-btn:hover {
+    color: #99edff;
+}
+.tab-btn.active {
+    color: #99edff;
+    border-bottom: 2px solid #99edff;
+    text-shadow: 0 0 10px #99edff;
+}
+
+#visualEditorContainer {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
 }
 
 #customsList {
@@ -261,7 +287,7 @@ body {
 }
 #customsList::-webkit-scrollbar-thumb {
     background: #99edff;
-    border-radius: 3px;
+    border-radius: 0;
 }
 
 #newCustomDuration, #autoSleepInput {

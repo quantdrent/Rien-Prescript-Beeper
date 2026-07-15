@@ -177,7 +177,7 @@ function parseBleMessage(message) {
                 let text = prescript.text;
                 let respond = prescript.respond !== false;
                 if (typeof scrambleReveal === 'function') {
-                    scrambleReveal(text, scrambleDuration, revealDuration, t => display.textContent = t);
+                    scrambleReveal(text, scrambleDuration, revealDuration, t => display.innerHTML = t);
                 }
                 if (typeof showResultButtons === 'function') {
                     showResultButtons(dur, respond);

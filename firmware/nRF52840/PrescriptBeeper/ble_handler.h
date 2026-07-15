@@ -153,7 +153,7 @@ void parseCommand(String message) {
 
       String msgText = message.substring(msgIndex + 4);
 
-      bool inf = (durStr == "INF");
+      bool inf = (durStr == "INF" || durStr == "-");
       unsigned long durMs = inf ? 0 : durStr.toInt() * 1000UL;
 
       showPrescriptOnDisplay(msgText.c_str(), durMs, inf, respond);
@@ -207,6 +207,8 @@ void parseCommand(String message) {
       int c7 = data.indexOf(',', c6 + 1);
       int c8 = data.indexOf(',', c7 + 1);
 
+      int c9 = data.indexOf(',', c8 + 1);
+
       if (c1 != -1 && c2 != -1 && c3 != -1) {
         textScale = data.substring(0, c1).toInt();
         scrambleDurationFrames = data.substring(c1 + 1, c2).toInt();
@@ -222,10 +224,17 @@ void parseCommand(String message) {
               bleRequirePin = data.substring(c6 + 1, c7).toInt() != 0;
               if (c8 != -1) {
                 useProportionalFont = data.substring(c7 + 1, c8).toInt() != 0;
-                textColor = (uint16_t)data.substring(c8 + 1).toInt();
+                if (c9 != -1) {
+                  textColor = (uint16_t)data.substring(c8 + 1, c9).toInt();
+                  timerFormatLong = data.substring(c9 + 1).toInt() != 0;
+                } else {
+                  textColor = (uint16_t)data.substring(c8 + 1).toInt();
+                  timerFormatLong = false;
+                }
               } else {
                 useProportionalFont = data.substring(c7 + 1).toInt() != 0;
                 textColor = DEFAULT_TEXT_COLOR;
+                timerFormatLong = false;
               }
             } else {
               bleRequirePin = data.substring(c6 + 1).toInt() != 0;
