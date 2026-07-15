@@ -205,6 +205,7 @@ void parseCommand(String message) {
       int c5 = data.indexOf(',', c4 + 1);
       int c6 = data.indexOf(',', c5 + 1);
       int c7 = data.indexOf(',', c6 + 1);
+      int c8 = data.indexOf(',', c7 + 1);
 
       if (c1 != -1 && c2 != -1 && c3 != -1) {
         textScale = data.substring(0, c1).toInt();
@@ -219,7 +220,13 @@ void parseCommand(String message) {
             timerScale = data.substring(c5 + 1, c6).toFloat();
             if (c7 != -1) {
               bleRequirePin = data.substring(c6 + 1, c7).toInt() != 0;
-              useProportionalFont = data.substring(c7 + 1).toInt() != 0;
+              if (c8 != -1) {
+                useProportionalFont = data.substring(c7 + 1, c8).toInt() != 0;
+                textColor = (uint16_t)data.substring(c8 + 1).toInt();
+              } else {
+                useProportionalFont = data.substring(c7 + 1).toInt() != 0;
+                textColor = DEFAULT_TEXT_COLOR;
+              }
             } else {
               bleRequirePin = data.substring(c6 + 1).toInt() != 0;
             }

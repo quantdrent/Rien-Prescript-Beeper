@@ -319,7 +319,7 @@ void beginScramble(const char* targetText) {
 
 void drawSprite() {
   spr.fillScreen(COLOR_BG);
-  spr.setTextColor(COLOR_TEXT);
+  spr.setTextColor(textColor);
 
   setupFont(g_textSz);
   for (int i = 0; i < g_lineCount; i++) {

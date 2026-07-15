@@ -40,6 +40,7 @@ extern bool useProportionalFont;
 #define DEFAULT_REVEAL_DELAY        20
 
 #define COLOR_BG    0x0000
-#define COLOR_TEXT  0xBF5F
+#define DEFAULT_TEXT_COLOR 0xBF5F
+extern uint16_t textColor;
 
 #endif

@@ -23,6 +23,8 @@ const resetTimerScale = document.getElementById("resetTimerScale");
 
 const pinToggle = document.getElementById("pinToggle");
 const fontToggle = document.getElementById("fontToggle");
+const textColorPicker = document.getElementById("textColorPicker");
+const resetTextColor = document.getElementById("resetTextColor");
 
 let currentTextScale = 1;
 let currentScrambleFrames = 20;
@@ -32,6 +34,25 @@ let currentTimerPosition = 0;
 let currentTimerScale = 0.5;
 let currentBleRequirePin = false;
 let currentUseProportionalFont = false;
+let currentTextColor = 48991; // 0xBF5F
+
+function hexToRgb565(hex) {
+    hex = hex.replace('#', '');
+    let r = parseInt(hex.substring(0, 2), 16) >> 3;
+    let g = parseInt(hex.substring(2, 4), 16) >> 2;
+    let b = parseInt(hex.substring(4, 6), 16) >> 3;
+    return (r << 11) | (g << 5) | b;
+}
+
+function rgb565ToHex(rgb565) {
+    let r = ((rgb565 >> 11) & 0x1F) << 3;
+    let g = ((rgb565 >> 5) & 0x3F) << 2;
+    let b = (rgb565 & 0x1F) << 3;
+    r = r | (r >> 5);
+    g = g | (g >> 6);
+    b = b | (b >> 5);
+    return '#' + (r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0')).toLowerCase();
+}
 
 settingsBtn.addEventListener("click", () => {
     settingsModal.style.display = "block";
@@ -53,6 +74,7 @@ if (resetScrambleDelay) resetScrambleDelay.addEventListener("click", () => scram
 if (resetRevealDelay) resetRevealDelay.addEventListener("click", () => revealDelayInput.value = 20);
 if (resetTimerPosition) resetTimerPosition.addEventListener("click", () => timerPositionInput.value = 0);
 if (resetTimerScale) resetTimerScale.addEventListener("click", () => timerScaleInput.value = 5);
+if (resetTextColor) resetTextColor.addEventListener("click", () => textColorPicker.value = "#b8e8f8");
 
 function applySettings() {
     currentTextScale = parseInt(textScaleInput.value);
@@ -71,9 +93,10 @@ function applySettings() {
 
     currentBleRequirePin = pinToggle ? pinToggle.checked : false;
     currentUseProportionalFont = fontToggle ? fontToggle.checked : false;
+    currentTextColor = textColorPicker ? hexToRgb565(textColorPicker.value) : 48991;
 
     if (typeof txCharacteristic !== 'undefined' && txCharacteristic) {
-        let payload = `${currentTextScale},${currentScrambleFrames},${currentScrambleDelay},${currentRevealDelay},${currentTimerPosition},${currentTimerScale},${currentBleRequirePin ? 1 : 0},${currentUseProportionalFont ? 1 : 0}`;
+        let payload = `${currentTextScale},${currentScrambleFrames},${currentScrambleDelay},${currentRevealDelay},${currentTimerPosition},${currentTimerScale},${currentBleRequirePin ? 1 : 0},${currentUseProportionalFont ? 1 : 0},${currentTextColor}`;
         sendBleCommand("SET_SETTINGS", payload);
     }
     settingsModal.style.display = "none";
@@ -98,12 +121,19 @@ function updateSettingsUI(csvData) {
             currentBleRequirePin = parseInt(parts[6]) !== 0;
             if (parts.length >= 8) {
                 currentUseProportionalFont = parseInt(parts[7]) !== 0;
+                if (parts.length >= 9) {
+                    currentTextColor = parseInt(parts[8]);
+                } else {
+                    currentTextColor = 48991;
+                }
             } else {
                 currentUseProportionalFont = false;
+                currentTextColor = 48991;
             }
         } else {
             currentBleRequirePin = false;
             currentUseProportionalFont = false;
+            currentTextColor = 48991;
         }
 
         if (isNaN(currentTextScale) || currentTextScale < 1) currentTextScale = 1;
@@ -125,6 +155,9 @@ function updateSettingsUI(csvData) {
         }
         if (fontToggle) {
             fontToggle.checked = currentUseProportionalFont;
+        }
+        if (textColorPicker) {
+            textColorPicker.value = rgb565ToHex(currentTextColor);
         }
     }
 }
