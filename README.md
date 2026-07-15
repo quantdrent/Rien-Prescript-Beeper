@@ -38,6 +38,10 @@ This is the recommended "Advanced" version with a tft color screen, custom propo
 - 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
 - Any small buttons that can fit inside the case
 - Wires (AWG 24 recommended)
+
+**Required Arduino Libraries:**
+- `Adafruit GFX Library`
+- `Adafruit LittleFS`
 **3D Printing (Case):**
 - **For the Advanced Build (nRF52840 Supermini):** Use `models/Advanced-Case.3mf` or `models/Advanced-Case.stl`
 - *(Tinkercad remix link available in `models/tinkercadlink.txt`. I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
@@ -89,6 +93,10 @@ This legacy version is kept here because the parts are generally much cheaper an
 - TP4056 Type-C Charger [[AliExpress](https://www.aliexpress.com/item/1005006043031985.html)]
 - Any small slide switch that fits inside the case
 - Wires (AWG 26 recommended)
+
+**Required Arduino Libraries:**
+- `Adafruit GFX Library`
+- `Adafruit SH110X`
 **3D Printing (Case):**
 - **For the Legacy Build (ESP32-C3 Supemini):** Use `models/Legacy-Case.3mf` or `models/Legacy-Case.stl`
 - I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
