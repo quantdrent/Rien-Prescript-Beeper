@@ -34,7 +34,7 @@ let currentTimerPosition = 0;
 let currentTimerScale = 0.5;
 let currentBleRequirePin = false;
 let currentUseProportionalFont = false;
-let currentTextColor = 48991; // 0xBF5F
+let currentTextColor = 48991;
 
 function hexToRgb565(hex) {
     hex = hex.replace('#', '');

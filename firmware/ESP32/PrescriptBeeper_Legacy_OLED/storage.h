@@ -21,7 +21,6 @@ int timerPosition = 0;
 float timerScale = 1.0;
 bool bleRequirePin = false;
 bool useProportionalFont = false;
-uint16_t textColor = DEFAULT_TEXT_COLOR;
 
 int cachedTotalPrescripts = -1;
 
@@ -44,7 +43,6 @@ void readSettings() {
       int c5 = content.indexOf(',', c4 + 1);
       int c6 = content.indexOf(',', c5 + 1);
       int c7 = content.indexOf(',', c6 + 1);
-      int c8 = content.indexOf(',', c7 + 1);
 
       if (c1 == -1) {
         textScale = content.toInt();
@@ -61,13 +59,7 @@ void readSettings() {
             timerScale = content.substring(c5 + 1, c6).toFloat();
             if (c7 != -1) {
               bleRequirePin = content.substring(c6 + 1, c7).toInt() != 0;
-              if (c8 != -1) {
-                useProportionalFont = content.substring(c7 + 1, c8).toInt() != 0;
-                textColor = (uint16_t)content.substring(c8 + 1).toInt();
-              } else {
-                useProportionalFont = content.substring(c7 + 1).toInt() != 0;
-                textColor = DEFAULT_TEXT_COLOR;
-              }
+              useProportionalFont = content.substring(c7 + 1).toInt() != 0;
             } else {
               bleRequirePin = content.substring(c6 + 1).toInt() != 0;
             }
@@ -86,7 +78,7 @@ void writeSettings() {
   LittleFS.remove(SETTINGS_FILE);
   File f = LittleFS.open(SETTINGS_FILE, "w");
   if (f) {
-    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "," + String(textColor));
+    f.println(String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0));
     f.close();
   }
 }
@@ -98,7 +90,7 @@ void clearCustoms() {
 
 void sendSettings() {
   if (!bleNotifyReady()) return;
-  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "," + String(textColor) + "\n";
+  String msg = "RES:SETTINGS|MSG:" + String(textScale) + "," + String(scrambleDurationFrames) + "," + String(scrambleDelayMs) + "," + String(revealDelayMs) + "," + String(timerPosition) + "," + String(timerScale, 2) + "," + String(bleRequirePin ? 1 : 0) + "," + String(useProportionalFont ? 1 : 0) + "\n";
   sendChunked(msg.c_str(), msg.length());
 }
 

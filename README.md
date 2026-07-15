@@ -15,15 +15,12 @@ If you want to use the beeper, <a href="https://quantdrent.github.io/Rien-Prescr
 
 ## Hardware Versions & Required Materials
 
-> **READ THIS BEFORE BUYING PARTS**
+> There are three different hardware setups in this project:
+> * **The nRF52840 (Advanced Build).** It has a TFT color screen, custom fonts, and deep sleep mode. This is the recommended version you see in the GIF.
+> * **The ESP32-C3 (Standard Build).** This uses the exact same TFT color screen as the advanced build, but runs on a much cheaper ESP32-C3 SuperMini. It lacks deep sleep but is a great budget alternative.
+> * **The ESP32-C3 (Legacy OLED Build).** An older, archived build that uses a basic blue 1.3" OLED screen. You can find its firmware in `firmware/ESP32/PrescriptBeeper_Legacy_OLED`.
 > 
-> There are two completely different versions of this project
-> * **The nRF52840 is the ADVANCED build.** It has a tft screen, custom fonts (similar to the web), and deep sleep mode. This is the version you see in the GIF
-> * **The ESP32C3 is the LEGACY build.** It has a basic blue OLED screen. It only exists as a cheaper alternative because the parts are easier to buy.
-> 
-> **DO NOT mix the parts (if you dont know what youre doing).** The firmwares and 3D printed cases are **NOT** interchangeable. The ESP32C3 is **NOT** the advanced version. Make sure you pick the right firmware and 3D model for your parts
->
->if someone makes a esp32c3/s3 version of the advanecd version please tell me and we can put it here
+> **DO NOT mix the parts (if you dont know what youre doing).** The firmwares and 3D printed cases are **NOT** interchangeable between the different screens and boards. Make sure you pick the right firmware and 3D model for your parts.
 
 <details>
 <summary><strong>Advanced Build (nRF52840)</strong></summary>
@@ -42,6 +39,7 @@ This is the recommended "Advanced" version with a tft color screen, custom propo
 **Required Arduino Libraries:**
 - `Adafruit GFX Library`
 - `Adafruit LittleFS`
+- `Adafruit ST7735 and ST7789 Library`
 **3D Printing (Case):**
 - **For the Advanced Build (nRF52840 Supermini):** Use `models/Advanced-Case.3mf` or `models/Advanced-Case.stl`
 - *(Tinkercad remix link available in `models/tinkercadlink.txt`. I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
@@ -80,15 +78,17 @@ The SuperMini nRF52840 boards have nice!nano v2 compatibility, meaning the Adafr
 </details>
 
 <details>
-<summary><strong>Legacy Build (ESP32)</strong></summary>
+<summary><strong>Standard Build (ESP32-C3 TFT)</strong></summary>
 
-This legacy version is kept here because the parts are generally much cheaper and significantly easier to source than the 2.25" ST7789 screen. If you are on a strict budget or the advanced parts aren't available in your area, use this build.
+This version is kept here because the ESP32 parts are generally much cheaper and easier to source than the nRF52840, while still allowing you to use the premium TFT color screen.
 
-> **If you are using a ESP32C3** check out [this guide](https://randomnerdtutorials.com/getting-started-esp32-c3-super-mini/) to set up your board.
+> **If you are using an ESP32C3** check out [this guide](https://randomnerdtutorials.com/getting-started-esp32-c3-super-mini/) to set up your board in Arduino IDE.
+
+instruction for this version have not been completed. this was a port made by someone else
 
 **Required Parts:**
 - ESP32C3 Super Mini [[AliExpress](https://www.aliexpress.com/item/1005007941259180.html)] (any ESP32 Super Mini should work)
-- 1.3 Inch OLED Screen SH1106 [[AliExpress](https://www.aliexpress.com/item/1005006862867338.html)]
+- 2.25 Inch TFT LCD Module 76x284 ST7789 [[AliExpress](https://www.aliexpress.com/item/1005011855033572.html)]
 - 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
 - TP4056 Type-C Charger [[AliExpress](https://www.aliexpress.com/item/1005006043031985.html)]
 - Any small slide switch that fits inside the case
@@ -96,7 +96,44 @@ This legacy version is kept here because the parts are generally much cheaper an
 
 **Required Arduino Libraries:**
 - `Adafruit GFX Library`
+- `Adafruit LittleFS`
+- `Adafruit ST7735 and ST7789 Library`
+
+**3D Printing (Case):**
+- **Note:** You will likely need to remix the Advanced-Case to fit the ESP32-C3 port cutouts, as the current `Legacy-Case` is shaped for the OLED screen.
+
+**Wiring Table:**
+| ESP32-C3 SuperMini Pin | Component / Peripheral Pin |
+| :--- | :--- |
+| **`GPIO 0`** | TFT `MOSI` (or `SDA`) |
+| **`GPIO 1`** | TFT `SCLK` (or `SCL`) |
+| **`GPIO 2`** | TFT `CS` |
+| **`GPIO 3`** | TFT `DC` (or `RS`) |
+| **`GPIO 4`** | TFT `RST` |
+| **`GPIO 6`** | Pass Button (TTP-223) `I/O` |
+| **`GPIO 10`**| Fail Button (TTP-223) `I/O` |
+| **`3.3V`**   | TFT `VCC`, Buttons `VCC` |
+| **`GND`**    | TFT `GND`, Buttons `GND` |
+
+*(Note: The slide switch does not connect to a GPIO pin; it should be wired directly between your battery and the board's power input to act as a physical on/off switch).*
+</details>
+
+<details>
+<summary><strong>Legacy Build (ESP32-C3 OLED)</strong></summary>
+
+This is the archived legacy version using a monochrome OLED. You can find its firmware in `firmware/ESP32/PrescriptBeeper_Legacy_OLED`.
+
+**Required Parts:**
+- ESP32C3 Super Mini [[AliExpress](https://www.aliexpress.com/item/1005007941259180.html)]
+- 1.3 Inch OLED Screen SH1106 [[AliExpress](https://www.aliexpress.com/item/1005006862867338.html)]
+- 2x Touch capacitive switches TTP-223
+- TP4056 Type-C Charger
+- Wires (AWG 26 recommended)
+
+**Required Arduino Libraries:**
+- `Adafruit GFX Library`
 - `Adafruit SH110X`
+
 **3D Printing (Case):**
 - **For the Legacy Build (ESP32-C3 Supemini):** Use `models/Legacy-Case.3mf` or `models/Legacy-Case.stl`
 - I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*

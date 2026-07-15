@@ -1,4 +1,3 @@
-//this is still experimental i havent have the chance to test this thuroughly if you decided to use this version please let me know
 #include <Arduino.h>
 #include "config.h"
 #include "display.h"

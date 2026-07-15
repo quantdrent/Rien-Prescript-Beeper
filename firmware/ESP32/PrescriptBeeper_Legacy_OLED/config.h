@@ -12,14 +12,11 @@ extern float timerScale;
 extern bool bleRequirePin;
 extern bool useProportionalFont;
 
-#define TFT_WIDTH 284
-#define TFT_HEIGHT 76
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
 
-#define TFT_MOSI  0
-#define TFT_SCLK  1
-#define TFT_CS    2
-#define TFT_DC    3
-#define TFT_RST   4
+#define I2C_SDA_PIN 3
+#define I2C_SCL_PIN 4
 
 #define BUTTON_PASS_PIN  6
 #define BUTTON_FAIL_PIN  10
@@ -39,9 +36,5 @@ extern bool useProportionalFont;
 #define DEFAULT_SCRAMBLE_FRAMES     20
 #define DEFAULT_SCRAMBLE_DELAY      20
 #define DEFAULT_REVEAL_DELAY        20
-
-#define COLOR_BG    0x0000
-#define DEFAULT_TEXT_COLOR 0xBF5F
-extern uint16_t textColor;
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <SPI.h>
 #include <Adafruit_GFX.h>
-#include "ST7789_nRF52840.h"
+#include <Adafruit_ST7789.h>
 #include "config.h"
 
 #include "PixelifySans_Regular9pt7b.h"
@@ -19,7 +19,15 @@ extern bool isInfinite;
 extern unsigned long displayDurationMs;
 extern bool useProportionalFont;
 
-ST7789_nRF tft(TFT_CS, TFT_DC, TFT_RST);
+class Custom_ST7789 : public Adafruit_ST7789 {
+public:
+  Custom_ST7789(int8_t cs, int8_t dc, int8_t rst) : Adafruit_ST7789(cs, dc, rst) {}
+  void setCustomOffsets(int8_t col, int8_t row) {
+    setColRowStart(col, row);
+  }
+};
+
+Custom_ST7789 tft = Custom_ST7789(TFT_CS, TFT_DC, TFT_RST);
 GFXcanvas16 spr(TFT_WIDTH, TFT_HEIGHT);
 
 extern int scrambleDurationFrames;
@@ -31,8 +39,10 @@ static const int NUM_SCRAMBLE_CHARS = sizeof(SCRAMBLE_CHARS) - 1;
 
 void displayInit() {
   SPI.setPins(-1, TFT_SCLK, TFT_MOSI);
-  tft.begin();
-  tft.setRotation(1);
+  tft.init(76, 284);
+  tft.setRotation(3);
+  tft.setCustomOffsets(18, 82);
+  tft.invertDisplay(false);
   tft.fillScreen(COLOR_BG);
 }
 
@@ -62,7 +72,7 @@ unsigned long displayFinishedTime = 0;
 void setupFont(int sz) {
   if (!useProportionalFont) {
     spr.setFont(NULL);
-    int realSz = sz + 1; // Default font is quite small, so bump it slightly
+    int realSz = sz + 1;
     spr.setTextSize(realSz > 0 ? realSz : 1);
     return;
   }
@@ -304,8 +314,6 @@ void beginScramble(const char* targetText) {
   int blockH = g_lineCount * h;
   g_startY = (TFT_HEIGHT - blockH) / 2 - y1;
 
-  // g_startX is no longer needed since each line calculates its own center
-
   setupTimerDisplay(targetText, displayDurationMs);
 
   displayScrambling = true;
@@ -349,7 +357,7 @@ void drawSprite() {
     spr.print(timerWorkStr);
   }
 
-  tft.drawBuffer(0, 0, spr.width(), spr.height(), spr.getBuffer());
+  tft.drawRGBBitmap(0, 0, spr.getBuffer(), spr.width(), spr.height());
 }
 
 void handleDisplayScramble() {
@@ -440,7 +448,7 @@ void displayIdle() {
   memset(timerWorkStr, 0, sizeof(timerWorkStr));
   g_lineCount = 0;
   spr.fillScreen(COLOR_BG);
-  tft.drawBuffer(0, 0, spr.width(), spr.height(), spr.getBuffer());
+  tft.drawRGBBitmap(0, 0, spr.getBuffer(), spr.width(), spr.height());
 }
 
 #endif
