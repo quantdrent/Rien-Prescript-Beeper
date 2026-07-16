@@ -144,7 +144,7 @@ void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool inf
   displayDurationMs = durationMs;
   requiresResponse = respond;
 
-  if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected.") {
+  if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && currentDisplayText != "Disconnected.") {
     if (!currentDisplayText.startsWith("PIN: ")) {
       addStats("0,0,1");
     }
@@ -163,7 +163,7 @@ void handleDisplayTimer() {
     if (elapsed < displayDurationMs) {
       updateTimerDisplay(displayDurationMs - elapsed);
     } else {
-      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && !currentDisplayText.startsWith("PIN: ")) {
+      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && currentDisplayText != "Disconnected." && !currentDisplayText.startsWith("PIN: ")) {
         timerTimeoutFail = true;
       } else {
         isDisplaying = false;
@@ -187,7 +187,7 @@ void handleButtons() {
     simulatePass = false;
     if (passTriggered) passHandled = true;
 
-    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED." || currentDisplayText == "Connected." || !requiresResponse);
+    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED." || currentDisplayText == "Connected." || currentDisplayText == "Disconnected." || !requiresResponse);
     if (isIdleOrFinished && !fromWeb) {
       int idx = -1;
       String line = getRandomPrescript(&idx);
@@ -209,7 +209,7 @@ void handleButtons() {
       if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
         addStats("1,0,0");
         if (bleuart.notifyEnabled() && !fromWeb) bleuart.print("EVT:PASS\n");
-        showPrescriptOnDisplay("CLEAR.", 800, false);
+        showPrescriptOnDisplay("CLEAR.", 800, false, false);
       }
     }
   }
@@ -234,7 +234,7 @@ void handleButtons() {
       if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED.") {
         addStats("0,1,0");
         if (bleuart.notifyEnabled() && !fromWeb) bleuart.print("EVT:FAIL\n");
-        showPrescriptOnDisplay("FAILED.", 800, false);
+        showPrescriptOnDisplay("FAILED.", 800, false, false);
       } else if (!requiresResponse && wasTimeout) {
         displayIdle();
       }

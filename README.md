@@ -11,7 +11,7 @@ If you want to use the beeper, <a href="https://quantdrent.github.io/Rien-Prescr
 <strong>Note: You need to use a browser that supports Web BLE</strong> (Chrome, Edge, Opera, etc).
 </p>
 
----
+
 
 ## Hardware Versions & Required Materials
 
@@ -28,6 +28,8 @@ If you want to use the beeper, <a href="https://quantdrent.github.io/Rien-Prescr
 This is the recommended "Advanced" version with a tft color screen, custom proportional fonts, and deep sleep support.
 
 > **Note:** Don't forget to solder the boost pads on the SuperMini board if your battery is more than 500mAh.
+>
+> The TFT `BL` (Backlight) pin MUST be wired to `GND` for the screen to turn on
 
 **Required Parts:**
 - SuperMini nRF52840 [[AliExpress](https://www.aliexpress.com/item/1005006019812115.html)]
@@ -83,11 +85,13 @@ The SuperMini nRF52840 boards have nice!nano v2 compatibility, meaning the Adafr
 This version is kept here because the ESP32 parts are generally much cheaper and easier to source than the nRF52840, while still allowing you to use the premium TFT color screen.
 
 > **If you are using an ESP32C3** check out [this guide](https://randomnerdtutorials.com/getting-started-esp32-c3-super-mini/) to set up your board in Arduino IDE.
+>
+> The TFT `BL` (Backlight) pin MUST be wired to `GND` for the screen to turn on
 
 instruction for this version have not been completed. this was a port made by someone else
 
 **Required Parts:**
-- ESP32C3 Super Mini [[AliExpress](https://www.aliexpress.com/item/1005007941259180.html)] (any ESP32 Super Mini should work)
+- ESP32C3 SuperMini (any ESP32 SuperMini should work)
 - 2.25 Inch TFT LCD Module 76x284 ST7789 [[AliExpress](https://www.aliexpress.com/item/1005011855033572.html)]
 - 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
 - TP4056 Type-C Charger [[AliExpress](https://www.aliexpress.com/item/1005006043031985.html)]
@@ -111,12 +115,12 @@ instruction for this version have not been completed. this was a port made by so
 | **`GPIO 2`** | TFT `CS` |
 | **`GPIO 3`** | TFT `DC` (or `RS`) |
 | **`GPIO 4`** | TFT `RST` |
-| **`GPIO 6`** | Pass Button (TTP-223) `I/O` |
-| **`GPIO 10`**| Fail Button (TTP-223) `I/O` |
+| **`GPIO 5`** | Pass Button (TTP-223) `I/O` |
+| **`GPIO 6`** | Fail Button (TTP-223) `I/O` |
 | **`3.3V`**   | TFT `VCC`, Buttons `VCC` |
-| **`GND`**    | TFT `GND`, Buttons `GND` |
+| **`GND`**    | TFT `GND`, TFT `BL`, Buttons `GND` |
 
-*(Note: The slide switch does not connect to a GPIO pin; it should be wired directly between your charge module output and the board's power input to act as a physical on/off switc, basically look at the wiring diagram in legacy versionh).*
+*(Note: For the charging module, solder it the exact same way as shown in the Legacy version's wiring diagram. The slide switch does not connect to a GPIO pin; wire it inline with the OUT+ of the charging module to act as a physical power switch).*
 </details>
 
 <details>
@@ -125,7 +129,7 @@ instruction for this version have not been completed. this was a port made by so
 This is the archived legacy version using a monochrome OLED. You can find its firmware in `firmware/ESP32/PrescriptBeeper_Legacy_OLED`.
 
 **Required Parts:**
-- ESP32C3 Super Mini [[AliExpress](https://www.aliexpress.com/item/1005007941259180.html)]
+- ESP32C3 Super Mini
 - 1.3 Inch OLED Screen SH1106 [[AliExpress](https://www.aliexpress.com/item/1005006862867338.html)]
 - 2x Touch capacitive switches TTP-223
 - TP4056 Type-C Charger
@@ -143,6 +147,8 @@ This is the archived legacy version using a monochrome OLED. You can find its fi
 <p align="center">
   <img src="images/Legacy-ESP32-wiring.png" width="50%" alt="Legacy ESP32 Wiring">
 </p>
+
+*(Note: The slide switch does not connect to a GPIO pin; wire it inline with the OUT+ of the charging module to act as a physical power switch, as shown in the diagram).*
 </details>
 
 ## Quickstart

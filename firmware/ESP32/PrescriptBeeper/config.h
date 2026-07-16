@@ -23,14 +23,12 @@ extern bool useProportionalFont;
 
 #define BUTTON_PASS_PIN  5
 #define BUTTON_FAIL_PIN  6
-#define BUTTON_POWER_PIN 7
 
 #define DEBOUNCE_DELAY  50
 
 #define BLE_CHUNK_SIZE      20
 #define BLE_CHUNK_DELAY_MS  10
 
-#define JSON_BUF_SIZE   2048
 #define CUSTOMS_FILE    "/customs.txt"
 #define STATS_FILE      "/stats.txt"
 #define SETTINGS_FILE   "/settings.txt"
@@ -43,5 +41,6 @@ extern bool useProportionalFont;
 #define COLOR_BG    0x0000
 #define DEFAULT_TEXT_COLOR 0xBF5F
 extern uint16_t textColor;
+extern bool timerFormatLong;
 
 #endif

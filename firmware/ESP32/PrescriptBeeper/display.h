@@ -17,6 +17,7 @@ extern float timerScale;
 extern int textScale;
 extern bool isInfinite;
 extern unsigned long displayDurationMs;
+extern unsigned long displayStartTime;
 extern bool useProportionalFont;
 extern bool timerFormatLong;
 
@@ -58,8 +59,10 @@ static int g_textSz = 1;
 
 static char timerFinalStr[32];
 static char timerWorkStr[32];
+static int g_timerSz = 2;
 static int g_timerY = 0;
-static int g_timerSz = 1;
+
+#define IS_TIMER_TAG(s, i) (s[i] == '{' && (s[i+1] == 'T' || s[i+1] == 't') && (s[i+2] == 'I' || s[i+2] == 'i') && (s[i+3] == 'M' || s[i+3] == 'm') && (s[i+4] == 'E' || s[i+4] == 'e') && (s[i+5] == 'R' || s[i+5] == 'r') && s[i+6] == '}')
 
 static bool displayScrambling = false;
 static unsigned long displayScrambleStartTime = 0;
@@ -115,7 +118,7 @@ void stripTags(const char* src, char* dst) {
             inTag = false;
             i++;
             continue;
-        } else if(!inTag && src[i] == '{' && src[i+1] == 'T' && src[i+2] == 'I' && src[i+3] == 'M' && src[i+4] == 'E' && src[i+5] == 'R' && src[i+6] == '}') {
+        } else if(!inTag && IS_TIMER_TAG(src, i)) {
             int tLen = strlen(timerWorkStr);
             for(int t=0; t<tLen; t++) {
                 dst[j++] = timerWorkStr[t];
@@ -282,8 +285,15 @@ void formatTimeString(char* buf, size_t bufSize, unsigned long t) {
   }
 }
 
+bool checkHasInlineTimer(const char* txt) {
+  for (int i = 0; txt[i] != '\0'; i++) {
+    if (IS_TIMER_TAG(txt, i)) return true;
+  }
+  return false;
+}
+
 void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
-  bool hasInlineTimer = (strstr(targetText, "{TIMER}") != NULL);
+  bool hasInlineTimer = checkHasInlineTimer(targetText);
 
   if (!hasInlineTimer && timerPosition == 0) {
     timerFinalStr[0] = '\0';
@@ -291,14 +301,14 @@ void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
     return;
   }
   
-  if (strcmp(targetText, "CLEAR.") == 0 || strcmp(targetText, "FAILED.") == 0 || strcmp(targetText, "Connected.") == 0 || strcmp(targetText, "NO DATA") == 0) {
+  if (strcmp(targetText, "CLEAR.") == 0 || strcmp(targetText, "FAILED.") == 0 || strcmp(targetText, "Connected.") == 0 || strcmp(targetText, "Disconnected.") == 0 || strcmp(targetText, "NO DATA") == 0) {
     timerFinalStr[0] = '\0';
     timerWorkStr[0] = '\0';
     return;
   }
 
   if (isInfinite || durationMs == 0) {
-    strcpy(timerFinalStr, "INF");
+    strcpy(timerFinalStr, "nil");
   } else {
     unsigned long t = durationMs / 1000;
     formatTimeString(timerFinalStr, sizeof(timerFinalStr), t);
@@ -326,20 +336,18 @@ void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
 }
 
 void updateTimerDisplay(unsigned long remainingMs) {
+  if (timerFinalStr[0] == '\0') return;
+
   bool hasInlineTimer = false;
   for(int i=0; i<g_lineCount; i++) {
-    if(strstr(workLines[i], "{TIMER}") != NULL) { hasInlineTimer = true; break; }
+    if(checkHasInlineTimer(workLines[i])) { hasInlineTimer = true; break; }
   }
 
   if (timerPosition == 0 && !hasInlineTimer) return;
 
   char newTimerStr[128];
-  if (isInfinite) {
-    strcpy(newTimerStr, "INF");
-  } else {
-    unsigned long t = (remainingMs + 999) / 1000;
-    formatTimeString(newTimerStr, sizeof(newTimerStr), t);
-  }
+  unsigned long t = (remainingMs + 999) / 1000;
+  formatTimeString(newTimerStr, sizeof(newTimerStr), t);
 
   if (strcmp(timerFinalStr, newTimerStr) != 0) {
     strcpy(timerFinalStr, newTimerStr);
@@ -428,7 +436,7 @@ void drawSprite() {
         currentColor = textColor;
         spr.setTextColor(currentColor);
         continue;
-      } else if (c == '{' && workLines[i][j+1] == 'T' && workLines[i][j+2] == 'I' && workLines[i][j+3] == 'M' && workLines[i][j+4] == 'E' && workLines[i][j+5] == 'R' && workLines[i][j+6] == '}') {
+      } else if (IS_TIMER_TAG(workLines[i], j)) {
         j += 6;
         spr.print(timerWorkStr);
         continue;
@@ -437,7 +445,7 @@ void drawSprite() {
     }
   }
 
-  if (timerPosition != 0 && timerFinalStr[0] != '\0') {
+  if (timerPosition != 0 && timerFinalStr[0] != '\0' && strcmp(timerFinalStr, "nil") != 0) {
     setupFont(g_timerSz);
     int16_t x1, y1; uint16_t w, h;
     spr.getTextBounds(timerWorkStr, 0, 0, &x1, &y1, &w, &h);
@@ -471,6 +479,9 @@ void handleDisplayScramble() {
         for (int j = 0; j < llen; j++) {
           char c = finalLines[i][j];
           if (c == '{' && finalLines[i][j+1] == '#') {
+              inTag = true;
+              workLines[i][j] = c;
+          } else if (IS_TIMER_TAG(finalLines[i], j)) {
               inTag = true;
               workLines[i][j] = c;
           } else if (c == '{' && finalLines[i][j+1] == '}') {
@@ -547,6 +558,9 @@ void handleDisplayScramble() {
             if (c == '{' && finalLines[displayRevealLine][j+1] == '#') {
                 inTagReveal = true;
                 if (j > displayRevealChar) workLines[displayRevealLine][j] = c;
+            } else if (IS_TIMER_TAG(finalLines[displayRevealLine], j)) {
+                inTagReveal = true;
+                if (j > displayRevealChar) workLines[displayRevealLine][j] = c;
             } else if (c == '{' && finalLines[displayRevealLine][j+1] == '}') {
                 if (j > displayRevealChar) {
                     workLines[displayRevealLine][j] = '{';
@@ -576,6 +590,9 @@ void handleDisplayScramble() {
               if (c == '{' && finalLines[i][j+1] == '#') {
                   inTag = true;
                   workLines[i][j] = c;
+              } else if (IS_TIMER_TAG(finalLines[i], j)) {
+                  inTag = true;
+                  workLines[i][j] = c;
               } else if (c == '{' && finalLines[i][j+1] == '}') {
                   workLines[i][j] = '{';
                   workLines[i][j+1] = '}';
@@ -602,6 +619,7 @@ void handleDisplayScramble() {
       } else {
         displayScrambling = false;
         displayFinishedTime = ms;
+        displayStartTime = ms;
         drawSprite();
       }
     }

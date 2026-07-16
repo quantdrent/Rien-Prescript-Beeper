@@ -20,14 +20,12 @@ extern bool useProportionalFont;
 
 #define BUTTON_PASS_PIN  6
 #define BUTTON_FAIL_PIN  10
-#define BUTTON_POWER_PIN 7
 
 #define DEBOUNCE_DELAY  50
 
 #define BLE_CHUNK_SIZE      20
 #define BLE_CHUNK_DELAY_MS  10
 
-#define JSON_BUF_SIZE   2048
 #define CUSTOMS_FILE    "/customs.txt"
 #define STATS_FILE      "/stats.txt"
 #define SETTINGS_FILE   "/settings.txt"

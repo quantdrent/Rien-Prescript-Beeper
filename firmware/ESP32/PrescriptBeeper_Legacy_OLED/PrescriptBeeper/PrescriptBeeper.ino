@@ -23,7 +23,6 @@ void setup() {
 
   pinMode(BUTTON_PASS_PIN, INPUT_PULLUP);
   pinMode(BUTTON_FAIL_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_POWER_PIN, INPUT_PULLUP);
 
   if (!LittleFS.begin(true)) {
     Serial.println("LittleFS Mount Failed");
@@ -62,7 +61,7 @@ void showPrescriptOnDisplay(const char* text, unsigned long durationMs, bool inf
   displayDurationMs = durationMs;
   requiresResponse = respond;
 
-  if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected.") {
+  if (currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && currentDisplayText != "Disconnected.") {
     if (!currentDisplayText.startsWith("PIN: ")) {
       addStats("0,0,1");
     }
@@ -81,7 +80,7 @@ void handleDisplayTimer() {
     if (elapsed < displayDurationMs) {
       updateTimerDisplay(displayDurationMs - elapsed);
     } else {
-      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && !currentDisplayText.startsWith("PIN: ")) {
+      if (requiresResponse && currentDisplayText != "CLEAR." && currentDisplayText != "FAILED." && currentDisplayText != "Connected." && currentDisplayText != "Disconnected." && !currentDisplayText.startsWith("PIN: ")) {
         timerTimeoutFail = true;
       } else {
         isDisplaying = false;
@@ -105,7 +104,7 @@ void handleButtons() {
     simulatePass = false;
     if (passTriggered) passHandled = true;
 
-    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED." || currentDisplayText == "Connected." || !requiresResponse);
+    bool isIdleOrFinished = (!isDisplaying || currentDisplayText == "CLEAR." || currentDisplayText == "FAILED." || currentDisplayText == "Connected." || currentDisplayText == "Disconnected." || !requiresResponse);
     if (isIdleOrFinished && !fromWeb) {
       int idx = -1;
       String line = getRandomPrescript(&idx);
@@ -114,7 +113,7 @@ void handleButtons() {
         bool respond = true;
         String text = "";
         if (parsePrescriptLine(line, dur, respond, text)) {
-          showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false, respond);
+          showPrescriptOnDisplay(text.c_str(), dur * 1000UL, dur == 0, respond);
           if (bleNotifyReady() && idx >= 0) {
             String evt = "EVT:PRESCRIPT|IDX:" + String(idx) + "\n";
             sendChunked(evt.c_str(), evt.length());

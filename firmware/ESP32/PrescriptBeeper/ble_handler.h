@@ -44,8 +44,6 @@ extern String currentDisplayText;
 extern bool simulatePass;
 extern bool simulateFail;
 
-String bleBuffer = "";
-
 bool bleNotifyReady() {
   return deviceConnected;
 }
@@ -132,7 +130,7 @@ void parseCommand(String message) {
       bool respond = true;
       String text = "";
       if (parsePrescriptLine(line, dur, respond, text)) {
-        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
+        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, dur == 0, respond);
         if (bleNotifyReady() && idx >= 0) {
           String evt = "EVT:PRESCRIPT|IDX:" + String(idx) + "\n";
           sendChunked(evt.c_str(), evt.length());
@@ -148,7 +146,7 @@ void parseCommand(String message) {
       bool respond = true;
       String text = "";
       if (parsePrescriptLine(line, dur, respond, text)) {
-        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false, respond);
+        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, dur == 0, respond);
       }
     }
   }
@@ -167,7 +165,7 @@ void parseCommand(String message) {
 
       String msgText = message.substring(msgIndex + 4);
 
-      bool inf = (durStr == "INF" || durStr == "-");
+      bool inf = (durStr == "INF" || durStr == "-" || durStr == "0");
       unsigned long durMs = inf ? 0 : durStr.toInt() * 1000UL;
 
       showPrescriptOnDisplay(msgText.c_str(), durMs, inf, respond);

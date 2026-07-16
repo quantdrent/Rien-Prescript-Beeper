@@ -11,7 +11,9 @@ extern float timerScale;
 extern int textScale;
 extern bool isInfinite;
 extern unsigned long displayDurationMs;
+extern unsigned long displayStartTime;
 extern bool useProportionalFont;
+extern bool timerFormatLong;
 
 Adafruit_SH1106G oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -29,7 +31,10 @@ static int g_textSz = 1;
 
 static char timerFinalStr[32];
 static char timerWorkStr[32];
+static int g_timerSz = 1;
 static int g_timerY = 0;
+
+#define IS_TIMER_TAG(s, i) (s[i] == '{' && (s[i+1] == 'T' || s[i+1] == 't') && (s[i+2] == 'I' || s[i+2] == 'i') && (s[i+3] == 'M' || s[i+3] == 'm') && (s[i+4] == 'E' || s[i+4] == 'e') && (s[i+5] == 'R' || s[i+5] == 'r') && s[i+6] == '}')
 
 static bool displayScrambling = false;
 static unsigned long displayScrambleStartTime = 0;
@@ -75,13 +80,48 @@ const uint8_t PROP_OFFSETS[96] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0
 };
 
+void stripTags(const char* src, char* dst) {
+    int i = 0, j = 0;
+    bool inTag = false;
+    while(src[i]) {
+        if(src[i] == '{' && src[i+1] == '#') {
+            inTag = true;
+            i++;
+            continue;
+        } else if(src[i] == '{' && src[i+1] == '}') {
+            i += 2;
+            continue;
+        } else if(inTag && src[i] == '}') {
+            inTag = false;
+            i++;
+            continue;
+        } else if(!inTag && IS_TIMER_TAG(src, i)) {
+            int tLen = strlen(timerWorkStr);
+            for(int t=0; t<tLen; t++) {
+                dst[j++] = timerWorkStr[t];
+            }
+            i += 7;
+            continue;
+        }
+        if(!inTag) {
+            dst[j++] = src[i];
+        }
+        i++;
+    }
+    dst[j] = '\0';
+}
+
 int getTextWidth(const char* text, int sz) {
+  char visible[256];
+  stripTags(text, visible);
+  
   if (!useProportionalFont) {
-    return strlen(text) * 6 * sz;
+    return strlen(visible) * 6 * sz;
   }
   int w = 0;
-  while (*text) {
-    unsigned char c = *text++;
+  const char* p = visible;
+  while (*p) {
+    unsigned char c = *p++;
     if (c >= 32 && c <= 127) {
       w += (PROP_WIDTHS[c - 32] + 1) * sz;
     } else {
@@ -184,59 +224,91 @@ int buildLayout(const char* text, char linesBuf[][64], int* lineCount, int* outS
   return sz;
 }
 
-void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
-  if (timerPosition == 0 || durationMs == 0 || isInfinite) {
-    timerFinalStr[0] = '\0';
-    timerWorkStr[0] = '\0';
-    return;
-  }
-
-  if (strcmp(targetText, "CLEAR.") == 0 || strcmp(targetText, "FAILED.") == 0 || strcmp(targetText, "Connected.") == 0 || strcmp(targetText, "NO DATA") == 0) {
-    timerFinalStr[0] = '\0';
-    timerWorkStr[0] = '\0';
-    return;
-  }
-
-  unsigned long t = durationMs / 1000;
-  if (t < 60) snprintf(timerFinalStr, sizeof(timerFinalStr), "%lus", t);
-  else {
-    unsigned long h = t / 3600;
-    unsigned long m = (t % 3600) / 60;
-    unsigned long s = t % 60;
-    if (h > 0) {
-      if (s > 0) snprintf(timerFinalStr, sizeof(timerFinalStr), "%luh %lum %lus", h, m, s);
-      else if (m > 0) snprintf(timerFinalStr, sizeof(timerFinalStr), "%luh %lum", h, m);
-      else snprintf(timerFinalStr, sizeof(timerFinalStr), "%luh", h);
-    } else {
-      if (s > 0) snprintf(timerFinalStr, sizeof(timerFinalStr), "%lum %lus", m, s);
-      else snprintf(timerFinalStr, sizeof(timerFinalStr), "%lum", m);
+void formatTimeString(char* buf, size_t bufSize, unsigned long t) {
+  if (!timerFormatLong) {
+    if (t < 60) snprintf(buf, bufSize, "%lus", t);
+    else {
+      unsigned long h = t / 3600;
+      unsigned long m = (t % 3600) / 60;
+      unsigned long s = t % 60;
+      if (h > 0) {
+        if (s > 0) snprintf(buf, bufSize, "%luh %lum %lus", h, m, s);
+        else if (m > 0) snprintf(buf, bufSize, "%luh %lum", h, m);
+        else snprintf(buf, bufSize, "%luh", h);
+      } else {
+        if (s > 0) snprintf(buf, bufSize, "%lum %lus", m, s);
+        else snprintf(buf, bufSize, "%lum", m);
+      }
+    }
+  } else {
+    if (t < 60) snprintf(buf, bufSize, "%lu second%s", t, t != 1 ? "s" : "");
+    else {
+      unsigned long h = t / 3600;
+      unsigned long m = (t % 3600) / 60;
+      unsigned long s = t % 60;
+      char hStr[32] = ""; char mStr[32] = ""; char sStr[32] = "";
+      if (h > 0) snprintf(hStr, sizeof(hStr), "%lu hour%s", h, h != 1 ? "s" : "");
+      if (m > 0 || (h > 0 && s > 0)) snprintf(mStr, sizeof(mStr), "%lu minute%s", m, m != 1 ? "s" : "");
+      if (s > 0) snprintf(sStr, sizeof(sStr), "%lu second%s", s, s != 1 ? "s" : "");
+      
+      if (h > 0 && s > 0) snprintf(buf, bufSize, "%s %s %s", hStr, mStr, sStr);
+      else if (h > 0 && m > 0) snprintf(buf, bufSize, "%s %s", hStr, mStr);
+      else if (h > 0) snprintf(buf, bufSize, "%s", hStr);
+      else if (m > 0 && s > 0) snprintf(buf, bufSize, "%s %s", mStr, sStr);
+      else if (m > 0) snprintf(buf, bufSize, "%s", mStr);
     }
   }
+}
+
+bool checkHasInlineTimer(const char* txt) {
+  for (int i = 0; txt[i] != '\0'; i++) {
+    if (IS_TIMER_TAG(txt, i)) return true;
+  }
+  return false;
+}
+
+void setupTimerDisplay(const char* targetText, unsigned long durationMs) {
+  bool hasInlineTimer = checkHasInlineTimer(targetText);
+
+  if (!hasInlineTimer && timerPosition == 0) {
+    timerFinalStr[0] = '\0';
+    timerWorkStr[0] = '\0';
+    return;
+  }
+
+  if (strcmp(targetText, "CLEAR.") == 0 || strcmp(targetText, "FAILED.") == 0 || strcmp(targetText, "Connected.") == 0 || strcmp(targetText, "Disconnected.") == 0 || strcmp(targetText, "NO DATA") == 0) {
+    timerFinalStr[0] = '\0';
+    timerWorkStr[0] = '\0';
+    return;
+  }
+
+  if (isInfinite || durationMs == 0) {
+    strcpy(timerFinalStr, "nil");
+  } else {
+    unsigned long t = durationMs / 1000;
+    formatTimeString(timerFinalStr, sizeof(timerFinalStr), t);
+  }
   strcpy(timerWorkStr, timerFinalStr);
+
+  if (hasInlineTimer && timerPosition == 0) return;
 
   if (timerPosition >= 1 && timerPosition <= 3) g_timerY = 1;
   else g_timerY = SCREEN_HEIGHT - 2 - 8;
 }
 
 void updateTimerDisplay(unsigned long remainingMs) {
-  if (timerPosition == 0 || isInfinite || timerFinalStr[0] == '\0') return;
-
-  char newTimerStr[32];
-  unsigned long t = (remainingMs + 999) / 1000;
-  if (t < 60) snprintf(newTimerStr, sizeof(newTimerStr), "%lus", t);
-  else {
-    unsigned long h = t / 3600;
-    unsigned long m = (t % 3600) / 60;
-    unsigned long s = t % 60;
-    if (h > 0) {
-      if (s > 0) snprintf(newTimerStr, sizeof(newTimerStr), "%luh %lum %lus", h, m, s);
-      else if (m > 0) snprintf(newTimerStr, sizeof(newTimerStr), "%luh %lum", h, m);
-      else snprintf(newTimerStr, sizeof(newTimerStr), "%luh", h);
-    } else {
-      if (s > 0) snprintf(newTimerStr, sizeof(newTimerStr), "%lum %lus", m, s);
-      else snprintf(newTimerStr, sizeof(newTimerStr), "%lum", m);
-    }
+  if (timerFinalStr[0] == '\0') return;
+  
+  bool hasInlineTimer = false;
+  for(int i=0; i<g_lineCount; i++) {
+    if(checkHasInlineTimer(workLines[i])) { hasInlineTimer = true; break; }
   }
+  
+  if (timerPosition == 0 && !hasInlineTimer) return;
+
+  char newTimerStr[128];
+  unsigned long t = (remainingMs + 999) / 1000;
+  formatTimeString(newTimerStr, sizeof(newTimerStr), t);
 
   if (strcmp(timerFinalStr, newTimerStr) != 0) {
     strcpy(timerFinalStr, newTimerStr);
@@ -287,7 +359,10 @@ void drawOledBuffer() {
   oled.setFont(NULL);
 
   for (int i = 0; i < g_lineCount; i++) {
-    int w = getTextWidth(workLines[i], g_textSz);
+    char visible[256];
+    stripTags(workLines[i], visible);
+    
+    int w = getTextWidth(visible, g_textSz);
     int currentX = (SCREEN_WIDTH - w) / 2;
     if (currentX < 0) currentX = 0;
 
@@ -296,11 +371,11 @@ void drawOledBuffer() {
     if (!useProportionalFont) {
       oled.setTextSize(g_textSz);
       oled.setCursor(currentX, yPos);
-      oled.print(workLines[i]);
+      oled.print(visible);
     } else {
       int cx = currentX;
-      for (int j = 0; j < strlen(workLines[i]); j++) {
-        unsigned char c = workLines[i][j];
+      for (int j = 0; j < strlen(visible); j++) {
+        unsigned char c = visible[j];
         if (c >= 32 && c <= 127) {
           int offset = PROP_OFFSETS[c - 32];
           oled.drawChar(cx - offset, yPos, c, SH110X_WHITE, SH110X_WHITE, g_textSz);
@@ -313,7 +388,7 @@ void drawOledBuffer() {
     }
   }
 
-  if (timerFinalStr[0] != '\0') {
+  if (timerFinalStr[0] != '\0' && strcmp(timerFinalStr, "nil") != 0) {
     int w = getTextWidth(timerWorkStr, 1);
     int currentTimerX = 0;
     if (timerPosition == 1 || timerPosition == 4) currentTimerX = 2;
@@ -356,11 +431,30 @@ void handleDisplayScramble() {
 
       for (int i = 0; i < g_lineCount; i++) {
         int llen = strlen(finalLines[i]);
+        bool inTag = false;
         for (int j = 0; j < llen; j++) {
-          if (finalLines[i][j] != ' ')
-            workLines[i][j] = SCRAMBLE_CHARS[random(0, NUM_SCRAMBLE_CHARS)];
-          else
-            workLines[i][j] = ' ';
+          char c = finalLines[i][j];
+          if (c == '{' && finalLines[i][j+1] == '#') {
+              inTag = true;
+              workLines[i][j] = c;
+          } else if (IS_TIMER_TAG(finalLines[i], j)) {
+              inTag = true;
+              workLines[i][j] = c;
+          } else if (c == '{' && finalLines[i][j+1] == '}') {
+              workLines[i][j] = '{';
+              workLines[i][j+1] = '}';
+              j++;
+          } else if (inTag && c == '}') {
+              inTag = false;
+              workLines[i][j] = c;
+          } else if (inTag) {
+              workLines[i][j] = c;
+          } else {
+              if (c != ' ' && c != '{' && c != '}')
+                workLines[i][j] = SCRAMBLE_CHARS[random(0, NUM_SCRAMBLE_CHARS)];
+              else
+                workLines[i][j] = c;
+          }
         }
       }
 
@@ -395,20 +489,62 @@ void handleDisplayScramble() {
         int len = strlen(finalLines[displayRevealLine]);
         if (displayRevealChar < len) {
           workLines[displayRevealLine][displayRevealChar] = finalLines[displayRevealLine][displayRevealChar];
-          for (int j = displayRevealChar + 1; j < len; j++) {
-            if (finalLines[displayRevealLine][j] != ' ')
-              workLines[displayRevealLine][j] = SCRAMBLE_CHARS[random(0, NUM_SCRAMBLE_CHARS)];
-            else
-              workLines[displayRevealLine][j] = ' ';
+          bool inTagReveal = false;
+          for (int j = 0; j < len; j++) {
+            char c = finalLines[displayRevealLine][j];
+            if (c == '{' && finalLines[displayRevealLine][j+1] == '#') {
+                inTagReveal = true;
+                if (j > displayRevealChar) workLines[displayRevealLine][j] = c;
+            } else if (IS_TIMER_TAG(finalLines[displayRevealLine], j)) {
+                inTagReveal = true;
+                if (j > displayRevealChar) workLines[displayRevealLine][j] = c;
+            } else if (c == '{' && finalLines[displayRevealLine][j+1] == '}') {
+                if (j > displayRevealChar) {
+                    workLines[displayRevealLine][j] = '{';
+                    workLines[displayRevealLine][j+1] = '}';
+                }
+                j++;
+            } else if (inTagReveal && c == '}') {
+                inTagReveal = false;
+                if (j > displayRevealChar) workLines[displayRevealLine][j] = c;
+            } else if (inTagReveal) {
+                if (j > displayRevealChar) workLines[displayRevealLine][j] = c;
+            } else {
+                if (j > displayRevealChar) {
+                    if (c != ' ' && c != '{' && c != '}')
+                      workLines[displayRevealLine][j] = SCRAMBLE_CHARS[random(0, NUM_SCRAMBLE_CHARS)];
+                    else
+                      workLines[displayRevealLine][j] = c;
+                }
+            }
           }
 
           for (int i = displayRevealLine + 1; i < g_lineCount; i++) {
             int llen = strlen(finalLines[i]);
+            bool inTag = false;
             for (int j = 0; j < llen; j++) {
-              if (finalLines[i][j] != ' ')
-                workLines[i][j] = SCRAMBLE_CHARS[random(0, NUM_SCRAMBLE_CHARS)];
-              else
-                workLines[i][j] = ' ';
+              char c = finalLines[i][j];
+              if (c == '{' && finalLines[i][j+1] == '#') {
+                  inTag = true;
+                  workLines[i][j] = c;
+              } else if (IS_TIMER_TAG(finalLines[i], j)) {
+                  inTag = true;
+                  workLines[i][j] = c;
+              } else if (c == '{' && finalLines[i][j+1] == '}') {
+                  workLines[i][j] = '{';
+                  workLines[i][j+1] = '}';
+                  j++;
+              } else if (inTag && c == '}') {
+                  inTag = false;
+                  workLines[i][j] = c;
+              } else if (inTag) {
+                  workLines[i][j] = c;
+              } else {
+                  if (c != ' ' && c != '{' && c != '}')
+                    workLines[i][j] = SCRAMBLE_CHARS[random(0, NUM_SCRAMBLE_CHARS)];
+                  else
+                    workLines[i][j] = c;
+              }
             }
           }
           drawOledBuffer();
@@ -420,6 +556,7 @@ void handleDisplayScramble() {
       } else {
         displayScrambling = false;
         displayFinishedTime = ms;
+        displayStartTime = ms;
         drawOledBuffer();
       }
     }

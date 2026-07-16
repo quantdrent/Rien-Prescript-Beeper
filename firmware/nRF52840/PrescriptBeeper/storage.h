@@ -327,15 +327,19 @@ bool parsePrescriptLine(const String& line, int& outDuration, bool& outRespond, 
 
   int sep2 = line.indexOf('|', sep1 + 1);
   String durStr = line.substring(0, sep1);
-  if (sep2 != -1 && sep2 - sep1 <= 2) {
+  durStr.trim();
+  if (sep2 != -1 && sep2 - sep1 <= 6) {
     outDuration = durStr == "-" ? 0 : durStr.toInt();
-    outRespond = (line.substring(sep1 + 1, sep2) != "0");
+    String resStr = line.substring(sep1 + 1, sep2);
+    resStr.trim();
+    outRespond = (resStr != "0" && resStr != "false");
     outText = line.substring(sep2 + 1);
   } else {
     outDuration = durStr == "-" ? 0 : durStr.toInt();
     outRespond = true;
     outText = line.substring(sep1 + 1);
   }
+  outText.trim();
 
   if (outDuration < 0 || (outDuration == 0 && durStr != "-" && durStr != "0")) outDuration = 10;
   

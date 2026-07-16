@@ -3,25 +3,26 @@ let pendingDeviceCustoms = [];
 
 function prescriptToString(p) {
     let durStr = (p.duration === 0 || p.duration === "-") ? "-" : (p.duration === undefined ? 10 : p.duration);
-    return `${durStr}|${p.respond === false ? 0 : 1}|${p.text}`;
+    return `${durStr} | ${p.respond === false ? 0 : 1} | ${p.text}`;
 }
 
 function stringToPrescript(s) {
     const sep1 = s.indexOf('|');
     if (sep1 !== -1 && sep1 < 5) {
         const sep2 = s.indexOf('|', sep1 + 1);
-        let durStr = s.substring(0, sep1);
+        let durStr = s.substring(0, sep1).trim();
         let durVal = parseInt(durStr, 10);
         let dur = durStr === "-" ? "-" : (isNaN(durVal) ? 10 : durVal);
 
-        if (sep2 !== -1 && sep2 - sep1 <= 2) {
-            let res = s.substring(sep1 + 1, sep2) !== '0';
-            return { duration: dur, respond: res, text: s.substring(sep2 + 1) };
+        if (sep2 !== -1 && sep2 - sep1 <= 6) {
+            let resStr = s.substring(sep1 + 1, sep2).trim().toLowerCase();
+            let res = (resStr !== '0' && resStr !== 'false');
+            return { duration: dur, respond: res, text: s.substring(sep2 + 1).trim() };
         } else {
-            return { duration: dur, respond: true, text: s.substring(sep1 + 1) };
+            return { duration: dur, respond: true, text: s.substring(sep1 + 1).trim() };
         }
     }
-    return { duration: 10, respond: true, text: s };
+    return { duration: 10, respond: true, text: s.trim() };
 }
 
 function savePrescripts() {
@@ -379,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith("#"));
                 const imported = lines.map(stringToPrescript);
                 if (imported.length > 0) {
-                    customPrescripts = imported;
+                    customPrescripts = [...customPrescripts, ...imported];
                     savePrescripts();
                     renderCustomsList();
                     syncCustomsToDevice();
@@ -439,15 +440,18 @@ async function syncCustomsToDevice() {
     }
 
     isSyncingCustoms = true;
-    do {
-        syncCustomsRequested = false;
-        await sendBleCommand("CLEAR_CUSTOMS");
-        for (let i = 0; i < customPrescripts.length; i++) {
-            await new Promise(r => setTimeout(r, 250));
-            await sendBleCommand("ADD_CUSTOM", prescriptToString(customPrescripts[i]));
-        }
-    } while (syncCustomsRequested);
-    isSyncingCustoms = false;
+    try {
+        do {
+            syncCustomsRequested = false;
+            await sendBleCommand("CLEAR_CUSTOMS");
+            for (let i = 0; i < customPrescripts.length; i++) {
+                await new Promise(r => setTimeout(r, 250));
+                await sendBleCommand("ADD_CUSTOM", prescriptToString(customPrescripts[i]));
+            }
+        } while (syncCustomsRequested);
+    } finally {
+        isSyncingCustoms = false;
+    }
 }
 
 function renderCustomsList() {
@@ -570,7 +574,6 @@ function renderCustomsList() {
         });
 
         item.appendChild(textContainer);
-        item.appendChild(durInputEl);
         item.appendChild(resLabel);
         item.appendChild(playBtn);
         item.appendChild(delBtn);

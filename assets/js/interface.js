@@ -80,19 +80,20 @@ function showResultButtons(duration, respond = true) {
     if (respond) {
         buttonContainer.innerHTML = `
             <button id="achievedBtn" disabled>Pass</button>
-            <div id="timerDisplay">${duration === 0 ? "INF" : formatTime(timeLeft)}</div>
+            <div id="timerDisplay" style="${duration === 0 ? 'display:none;' : ''}">${duration === 0 ? "-" : formatTime(timeLeft)}</div>
             <button id="failedBtn" disabled>Failed</button>
         `;
         document.getElementById("achievedBtn").onclick = triggerPass;
         document.getElementById("failedBtn").onclick = triggerFail;
     } else {
         buttonContainer.innerHTML = `
-            <div id="timerDisplay" style="font-size: 1.5em; padding: 10px;">${duration === 0 ? "INF" : formatTime(timeLeft)}</div>
+            <div id="timerDisplay" style="font-size: 1.5em; padding: 10px; ${duration === 0 ? 'display:none;' : ''}">${duration === 0 ? "-" : formatTime(timeLeft)}</div>
         `;
     }
 
+    window.inlineTimerValue = (duration === 0) ? "nil" : formatTime(timeLeft);
+
     if (currentTimer) clearInterval(currentTimer);
-    window.inlineTimerValue = (duration === 0) ? "INF" : timeLeft;
 
     currentTimer = setInterval(() => {
         if (!canResolve) return;
@@ -100,9 +101,9 @@ function showResultButtons(duration, respond = true) {
         if (timeLeft > 0 || duration === 0) {
             if (duration !== 0) timeLeft--;
             const timerEl = document.getElementById("timerDisplay");
-            let dispVal = duration === 0 ? "INF" : formatTime(timeLeft);
-            if (timerEl) timerEl.textContent = dispVal;
-            window.inlineTimerValue = (duration === 0) ? "INF" : timeLeft;
+            let dispVal = duration === 0 ? "-" : formatTime(timeLeft);
+            if (timerEl && duration !== 0) timerEl.textContent = dispVal;
+            window.inlineTimerValue = (duration === 0) ? "nil" : formatTime(timeLeft);
             const inlineTimers = document.querySelectorAll('.inline-timer');
             inlineTimers.forEach(el => el.textContent = window.inlineTimerValue);
         } else {
@@ -119,8 +120,8 @@ function showResultButtons(duration, respond = true) {
                 }
             } else {
                 const timerEl = document.getElementById("timerDisplay");
-                if (timerEl) timerEl.textContent = formatTime(0);
-                window.inlineTimerValue = 0;
+                if (timerEl && duration !== 0) timerEl.textContent = formatTime(0);
+                window.inlineTimerValue = formatTime(0);
                 const inlineTimers = document.querySelectorAll('.inline-timer');
                 inlineTimers.forEach(el => el.textContent = window.inlineTimerValue);
             }
@@ -163,6 +164,8 @@ async function handlePlayClick() {
     } else {
         if (typeof txCharacteristic !== 'undefined' && txCharacteristic && idx !== -1) {
             sendBleCommand("SHOW_IDX:" + idx);
+        } else if (typeof sendBleMessage === 'function') {
+            sendBleMessage(text, dur, respond);
         }
     }
 

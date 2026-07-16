@@ -1,0 +1,27 @@
+# Beeper Prescripts Example File
+# Lines starting with "#" are comments and will be ignored by the web UI.
+# 
+# Each prescript consists of: [Duration] | [Respond: 1/0] | [Text Content]
+# Duration can be a number in seconds, or "-" for infinite (unlimited) duration.
+# Respond can be 1 (requires button press to dismiss) or 0 (info only).
+
+# 1. Simple Text Messages
+# You can display basic messages to yourself for a set duration.
+15 | 1 | Test hello
+- | 0 | Go drink water
+
+# 2. Using The Inline Timer {TIMER}
+# The {TIMER} tag will be replaced with a live countdown if the duration is a number.
+# If the duration is "-" (infinite), it will display as "nil" or remain blank based on settings.
+# The {TIMER} tag is case-insensitive, so {timer} works too!
+60 | 1 | Go walk for {TIMER}!
+
+# 3. Using Random Numbers {RAND:min-max}
+# The web app will pick a random number between min and max.
+# This is great for randomized tasks or workouts!
+10 | 1 | Do {RAND:10-25} pushups now!
+
+# 4. Colorful Text {#RRGGBB} (TFT only)
+# For the ESP32 TFT color version, you can change text colors!
+# The color applies to all text following the tag until the next tag or end of line.
+10 | 1 | {#FF0000}RED

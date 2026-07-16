@@ -44,8 +44,6 @@ extern String currentDisplayText;
 extern bool simulatePass;
 extern bool simulateFail;
 
-String bleBuffer = "";
-
 bool bleNotifyReady() {
   return deviceConnected;
 }
@@ -132,7 +130,7 @@ void parseCommand(String message) {
       bool respond = true;
       String text = "";
       if (parsePrescriptLine(line, dur, respond, text)) {
-        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false);
+        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, dur == 0, respond);
         if (bleNotifyReady() && idx >= 0) {
           String evt = "EVT:PRESCRIPT|IDX:" + String(idx) + "\n";
           sendChunked(evt.c_str(), evt.length());
@@ -148,7 +146,7 @@ void parseCommand(String message) {
       bool respond = true;
       String text = "";
       if (parsePrescriptLine(line, dur, respond, text)) {
-        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, false, respond);
+        showPrescriptOnDisplay(text.c_str(), dur * 1000UL, dur == 0, respond);
       }
     }
   }
@@ -167,7 +165,7 @@ void parseCommand(String message) {
 
       String msgText = message.substring(msgIndex + 4);
 
-      bool inf = (durStr == "INF");
+      bool inf = (durStr == "INF" || durStr == "-" || durStr == "0");
       unsigned long durMs = inf ? 0 : durStr.toInt() * 1000UL;
 
       showPrescriptOnDisplay(msgText.c_str(), durMs, inf, respond);
@@ -218,6 +216,7 @@ void parseCommand(String message) {
       int c5 = data.indexOf(',', c4 + 1);
       int c6 = data.indexOf(',', c5 + 1);
       int c7 = data.indexOf(',', c6 + 1);
+      int c8 = data.indexOf(',', c7 + 1);
 
       if (c1 != -1 && c2 != -1 && c3 != -1) {
         textScale = data.substring(0, c1).toInt();
@@ -232,7 +231,12 @@ void parseCommand(String message) {
             timerScale = data.substring(c5 + 1, c6).toFloat();
             if (c7 != -1) {
               bleRequirePin = data.substring(c6 + 1, c7).toInt() != 0;
-              useProportionalFont = data.substring(c7 + 1).toInt() != 0;
+              if (c8 != -1) {
+                useProportionalFont = data.substring(c7 + 1, c8).toInt() != 0;
+                timerFormatLong = data.substring(c8 + 1).toInt() != 0;
+              } else {
+                useProportionalFont = data.substring(c7 + 1).toInt() != 0;
+              }
             } else {
               bleRequirePin = data.substring(c6 + 1).toInt() != 0;
             }

@@ -1,5 +1,9 @@
-# dur|respond|prescript
-# respond: 1=requires button press, 0=info only
+# Kritzkingvoid's Limbus Company Prescripts
+# Lines starting with "#" are comments and will be ignored by the web UI.
+# 
+# Each prescript consists of: [Duration] | [Respond: 1/0] | [Text Content]
+# Duration can be a number in seconds, or "-" for infinite (unlimited) duration.
+# Respond can be 1 (requires button press to dismiss) or 0 (info only).
 -|1|HAVE ALL OF YOUR SINNERS TARGET AN ENEMY WITH THE LOWEST HEALTH
 -|1|SINNERS WITH THE HIGHEST SPEED, TARGET THE SLOWEST ENEMY SLOT
 -|1|SINNERS WHO ROLLED EVEN-NUMBERED SPEED,CAN ONLY DEAL DAMAGE TO ODD-NUMBERED SLOTS
