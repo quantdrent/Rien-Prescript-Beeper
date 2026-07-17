@@ -13,8 +13,8 @@
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
-bool deviceConnected = false;
-bool oldDeviceConnected = false;
+volatile bool deviceConnected = false;
+volatile bool oldDeviceConnected = false;
 
 void saveCustomRule(String rule);
 void sendCustomRules();
@@ -51,6 +51,7 @@ bool bleNotifyReady() {
 void sendChunked(const char* data, int len) {
   if (!deviceConnected) return;
   for (int i = 0; i < len; i += BLE_CHUNK_SIZE) {
+    if (!deviceConnected) break;
     int chunkLen = min(BLE_CHUNK_SIZE, len - i);
     pTxCharacteristic->setValue((uint8_t*)(data + i), chunkLen);
     pTxCharacteristic->notify();
@@ -183,6 +184,7 @@ void parseCommand(String message) {
   }
   else if (message == "CMD:CLEAR_CUSTOMS") {
     LittleFS.remove(CUSTOMS_FILE);
+    invalidatePrescriptCache();
   }
   else if (message == "CMD:GET_STATS") {
     sendStats();
@@ -279,13 +281,17 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 String incomingBleBuffer = "";
 bool hasNewBleData = false;
+portMUX_TYPE bleMux = portMUX_INITIALIZER_UNLOCKED;
+
 
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       String rxValue = pCharacteristic->getValue();
       if (rxValue.length() > 0) {
-        incomingBleBuffer += rxValue;
+        portENTER_CRITICAL(&bleMux);
+        incomingBleBuffer += rxValue.c_str();
         hasNewBleData = true;
+        portEXIT_CRITICAL(&bleMux);
       }
     }
 };
@@ -334,21 +340,30 @@ void handleBLE() {
   }
 
   if (hasNewBleData) {
-    while (incomingBleBuffer.length() > 0) {
-      int nl = incomingBleBuffer.indexOf('\n');
+    String localCopy = "";
+    portENTER_CRITICAL(&bleMux);
+    localCopy = incomingBleBuffer;
+    incomingBleBuffer = "";
+    hasNewBleData = false;
+    portEXIT_CRITICAL(&bleMux);
+
+    while (localCopy.length() > 0) {
+      int nl = localCopy.indexOf('\n');
       if (nl != -1) {
-        String msg = incomingBleBuffer.substring(0, nl);
-        incomingBleBuffer = incomingBleBuffer.substring(nl + 1);
+        String msg = localCopy.substring(0, nl);
+        localCopy = localCopy.substring(nl + 1);
         msg.trim();
         if (msg.length() > 0) {
           parseCommand(msg);
         }
       } else {
+        // No newline found yet, put it back
+        portENTER_CRITICAL(&bleMux);
+        incomingBleBuffer = localCopy + incomingBleBuffer;
+        if (incomingBleBuffer.length() > 0) hasNewBleData = true;
+        portEXIT_CRITICAL(&bleMux);
         break;
       }
-    }
-    if (incomingBleBuffer.indexOf('\n') == -1) {
-       hasNewBleData = false;
     }
   }
 }

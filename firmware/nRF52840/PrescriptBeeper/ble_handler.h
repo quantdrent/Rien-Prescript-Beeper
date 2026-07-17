@@ -171,6 +171,7 @@ void parseCommand(String message) {
   }
   else if (message == "CMD:CLEAR_CUSTOMS") {
     InternalFS.remove(CUSTOMS_FILE);
+    invalidatePrescriptCache();
   }
   else if (message == "CMD:GET_STATS") {
     sendStats();

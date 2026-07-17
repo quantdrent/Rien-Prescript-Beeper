@@ -39,7 +39,7 @@ void setup() {
   bleInit();
   startAdv();
 
-  randomSeed(micros());
+  randomSeed(esp_random());
 
   lastPassState = digitalRead(BUTTON_PASS_PIN);
   lastFailState = digitalRead(BUTTON_FAIL_PIN);
