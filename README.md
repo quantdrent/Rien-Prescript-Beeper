@@ -2,6 +2,8 @@
 
 <p align="center">
   <img src="images/Main-nRF52840.gif" alt="Rien Prescript Beeper Thumbnail" width="25%" />
+    <br/>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a> <a href="https://quantdrent.github.io/Rien-Prescript-Beeper"><img src="https://img.shields.io/badge/Web-BLE-blue?logo=bluetooth" alt="Web BLE"></a>
 </p>
 
 <p align="center">
@@ -11,7 +13,11 @@ If you want to use the beeper, <a href="https://quantdrent.github.io/Rien-Prescr
 <strong>Note: You need to use a browser that supports Web BLE</strong> (Chrome, Edge, Opera, etc).
 </p>
 
-
+## Features
+- **Web BLE Integration:** Control the device, sync settings, and beam prescripts right from Chrome/Edge/Opera (no app installs needed).
+- **Custom Prescripts:** Write, import, and export your own custom prescripts via the web interface.
+- **Stats Tracking:** Physically tap the capacitive touch buttons to **Pass** or **Fail** a prescript, and the device will keep track of your stats.
+- **Deep Sleep Mode:** (Recommended Build only) Actually decent battery life for standby.
 
 ## Hardware Versions & Required Materials
 
@@ -37,6 +43,7 @@ This is the recommended version with a tft color screen, custom proportional fon
 - 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
 - Any small buttons that can fit inside the case
 - Wires (AWG 24 recommended)
+- 3.7V Lipo Battery (just make sure it fits in the case)
 
 **Required Arduino Libraries:**
 - `Adafruit GFX Library`
@@ -94,9 +101,13 @@ instruction for this version have not been completed. this was a port made by so
 - ESP32C3 SuperMini (any ESP32 SuperMini should work)
 - 2.25 Inch TFT LCD Module 76x284 ST7789 [[AliExpress](https://www.aliexpress.com/item/1005011855033572.html)]
 - 2x Touch capacitive switches TTP-223 [[AliExpress](https://www.aliexpress.com/item/32964219843.html)]
-- TP4056 Type-C Charger [[AliExpress](https://www.aliexpress.com/item/1005006043031985.html)]
 - Any small slide switch that fits inside the case [[AliExpress](https://www.aliexpress.com/item/1005011902173007.html)]
 - Wires (AWG 26 recommended)
+
+(optional)
+- Any small slide switch that fits inside the case [[AliExpress](https://www.aliexpress.com/item/1005011902173007.html)]
+- TP4056 Type-C Charger [[AliExpress](https://www.aliexpress.com/item/1005006043031985.html)]
+- 3.7V Lipo Battery (just make sure it fits in the case)
 
 **Required Arduino Libraries:**
 - `Adafruit GFX Library`
@@ -105,7 +116,7 @@ instruction for this version have not been completed. this was a port made by so
 
 **3D Printing (Case):**
 - **For the Alternative Build (ESP32-C3 Supermini):** Use `models/Case.3mf` or `models/Case.stl`
-- *(Tinkercad remix link available in `models/tinkercadlink.txt`. I recommend using `.3mf` files. Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
+- Best results were on a BambuLab A1 with 0.4 nozzle and SUNLU PLA+ 2.0)*
 
 **Wiring Table:**
 | ESP32-C3 SuperMini Pin | Component / Peripheral Pin |
@@ -132,9 +143,12 @@ This is the archived legacy version using a monochrome OLED. You can find its fi
 - ESP32C3 Super Mini
 - 1.3 Inch OLED Screen SH1106 [[AliExpress](https://www.aliexpress.com/item/1005006862867338.html)]
 - 2x Touch capacitive switches TTP-223
-- TP4056 Type-C Charger
 - Wires (AWG 26 recommended)
+
+(optional)
 - Any small slide switch that fits inside the case [[AliExpress](https://www.aliexpress.com/item/1005011902173007.html)]
+- TP4056 Type-C Charger [[AliExpress](https://www.aliexpress.com/item/1005006043031985.html)]
+- 3.7V Lipo Battery (just make sure it fits in the case)
 
 **Required Arduino Libraries:**
 - `Adafruit GFX Library`
