@@ -10,5 +10,7 @@
 - | 1 | Visit the beach and look at the waves.
 - | 1 | Relinquish your past. Dye your hair black with white strands, wear a black suit with golden buttons, and adopt the mannerisms and weapon proficiencies of a Fixer of a certain Library. You are now Rien.
 - | 1 | Purchase a picture book. Read exactly {RAND:1-14} pages to Yoshihide, but abruptly close it. Refuse to finish the story under any circumstances, ensuring she remains bound to you in hopes of finishing it together.
-- | 1 | When speaking to your apprentice, Sora, use a fond and empathetic tone. Maintain a quiet disposition and only share insights when prompted by those around you
-1200 | 1 | Make your apprentice dependent on you in {TIMER}.
+- | 1 | When speaking to your apprentice, Sora, use a fond and empathetic tone. Maintain a quiet disposition and only share insights when prompted by those around you.
+
+
+
